@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Common;
 
 namespace PixelRPG
 {
@@ -27,8 +28,9 @@ namespace PixelRPG
 					else
 						table[i, j] = WorldCell.OutOfBounds;
 					if (ChangeWorldCell!=null) ChangeWorldCell(row, column, table[row, column]);
-				}
-			return table;
+                }
+            if (ChangeWorldCell != null) ChangeWorldCell(ViewFieldSize / 2, ViewFieldSize / 2, WorldCell.Character);
+            return table;
         }
 	}
 }

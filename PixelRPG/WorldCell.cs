@@ -9,6 +9,7 @@ namespace PixelRPG
     public enum WorldCell
     {
         OutOfBounds,
+        Character,
         Empty,
         Grass
     }

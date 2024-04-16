@@ -8,7 +8,7 @@ namespace PixelRPG
 		public WorldCell[,] World { get; private set; }
 		public GameModel(int worldSize)
 		{
-			PlayerPosition = new Point(7,13);
+			PlayerPosition = new Point(7, 13);
 			World = CreateWorld(worldSize);
 		}
 
@@ -18,12 +18,17 @@ namespace PixelRPG
 			var world = new WorldCell[worldSize, worldSize];
 			for (int i = 0; i < worldSize; i++)
 				for (int j = 0; j < worldSize; j++)
-					world[i, j] = (WorldCell)random.Next(1,Enum.GetNames(typeof(WorldCell)).Length);
+					world[i, j] = (WorldCell)random.Next(2, Enum.GetNames(typeof(WorldCell)).Length);
 			return world;
 		}
 
-		public void SetPlayerPosition(Point newPosition) =>
-			PlayerPosition = newPosition;
+		public void SetPlayerPosition(Point newPosition)
+		{
+			if (InBounds(newPosition))
+				PlayerPosition = newPosition;
+			else
+				throw new ArgumentException();
+		}
 
 
 		public bool InBounds(Point point)=>
@@ -40,7 +45,9 @@ namespace PixelRPG
 					return @"images\world\Transparent.png";
                 case WorldCell.Grass:
 					return @"images\world\grass.png";
-			}
+                case WorldCell.Character:
+                    return @"images\characters\mainCharacter.png";
+            }
 			return null;
 		}
 	}

@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Security.Cryptography.X509Certificates;
 
 namespace PixelRPG
@@ -32,11 +33,13 @@ namespace PixelRPG
             {
                 var image = Image.FromFile(game.FileName(worldCell));
                 ((PictureBox)table.GetControlFromPosition(column, row)).BackgroundImage = image;
+                ((PictureBox)table.GetControlFromPosition(column, row)).SizeMode = PictureBoxSizeMode.Zoom;
             };
             var keyBar = new TextBox();
             controls.SetKeyCommands(keyBar);
             Controls.Add(table);
             Controls.Add(keyBar);
+            keyBar.Focus();
             keyBar.Select();
         }
 
@@ -58,9 +61,11 @@ namespace PixelRPG
                 {
                     var image = Image.FromFile(game.FileName(tableView[i, j]));
                     var p = new PictureBox() { Dock = DockStyle.Fill, BackgroundImage = image };
-                    p.SizeMode = PictureBoxSizeMode.StretchImage;
+                    p.SizeMode = PictureBoxSizeMode.Zoom;
                     table.Controls.Add(p, j, i);
                 }
+            var playerImage = Image.FromFile(game.FileName(WorldCell.Character));
+            ((PictureBox)table.GetControlFromPosition(GameVisual.ViewFieldSize/2, GameVisual.ViewFieldSize/2)).BackgroundImage = playerImage;
         }
     }
 }

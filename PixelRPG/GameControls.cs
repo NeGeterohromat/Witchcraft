@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Policy;
 using PixelRPG;
 
 public class GameControls
@@ -17,37 +18,14 @@ public class GameControls
 
     public void SetKeyCommands(TextBox keyBar)
     {
-        keyBar.KeyPress += (sender, e) => 
-        {
-            var newPosition = new Point(game.PlayerPosition.X,game.PlayerPosition.Y-1);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.A))
-            {
-                Move(newPosition);
-                game.SetPlayerPosition(newPosition);
-            }
-        };
         keyBar.KeyPress += (sender, e) =>
         {
-            var newPosition = new Point(game.PlayerPosition.X+1, game.PlayerPosition.Y);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.S))
-            {
-                Move(newPosition);
-                game.SetPlayerPosition(newPosition);
-            }
-        };
-        keyBar.KeyPress += (sender, e) =>
-        {
-            var newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y+1);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.D))
-            {
-                Move(newPosition);
-                game.SetPlayerPosition(newPosition);
-            }
-        };
-        keyBar.KeyPress += (sender, e) =>
-        {
-            var newPosition = new Point(game.PlayerPosition.X-1, game.PlayerPosition.Y);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.W))
+            Point newPosition = new Point(-1,-1);
+            if (AreCharsEqual(e.KeyChar, (char)Keys.A)) newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y - 1);
+            if (AreCharsEqual(e.KeyChar, (char)Keys.S)) newPosition = new Point(game.PlayerPosition.X + 1, game.PlayerPosition.Y);
+            if (AreCharsEqual(e.KeyChar, (char)Keys.D)) newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y + 1);
+            if (AreCharsEqual(e.KeyChar, (char)Keys.W)) newPosition = new Point(game.PlayerPosition.X - 1, game.PlayerPosition.Y);
+            if (game.InBounds(newPosition))
             {
                 Move(newPosition);
                 game.SetPlayerPosition(newPosition);
