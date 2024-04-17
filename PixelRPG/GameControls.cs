@@ -21,11 +21,33 @@ public class GameControls
         keyBar.KeyPress += (sender, e) =>
         {
             Point newPosition = new Point(-1,-1);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.A)) newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y - 1);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.S)) newPosition = new Point(game.PlayerPosition.X + 1, game.PlayerPosition.Y);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.D)) newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y + 1);
-            if (AreCharsEqual(e.KeyChar, (char)Keys.W)) newPosition = new Point(game.PlayerPosition.X - 1, game.PlayerPosition.Y);
-            if (game.InBounds(newPosition))
+            var newView = game.PlayerView;
+            if (AreCharsEqual(e.KeyChar, (char)Keys.A))
+            {
+                newView = Characters.BaseLeft;
+                newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y - 1);
+            }
+            if (AreCharsEqual(e.KeyChar, (char)Keys.S))
+            {
+                newView = Characters.BaseDown;
+                newPosition = new Point(game.PlayerPosition.X + 1, game.PlayerPosition.Y);
+            }
+            if (AreCharsEqual(e.KeyChar, (char)Keys.D))
+            {
+                newView = Characters.BaseRight;
+                newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y + 1);
+            }
+            if (AreCharsEqual(e.KeyChar, (char)Keys.W))
+            {
+                newView = Characters.BaseUp;
+                newPosition = new Point(game.PlayerPosition.X - 1, game.PlayerPosition.Y);
+            }
+            if (newView != game.PlayerView)
+            {
+                game.SetPlayerView(newView);
+                visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, newView);
+            }
+            else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
             {
                 Move(newPosition);
                 game.SetPlayerPosition(newPosition);

@@ -20,10 +20,10 @@ namespace PixelRPG
 
             public void ChangeButtonTextSize(int size)
             {
-                if (size >= 0)
+                if (size > 0)
                     foreach (var button in buttons)
                         button.Font = new Font(UserView.ButtonBasedFontFamily, size);
-                else
+                else if (size < 0)
                     throw new ArgumentException();
             }
 

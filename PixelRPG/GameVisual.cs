@@ -12,9 +12,17 @@ namespace PixelRPG
 			this.game = game;
 		}
 
-		public event Action<int,int,WorldCell> ChangeWorldCell;
+		public event Action<int,int,WorldCell> ChangeWorldCellView;
+		public event Action<int, int, Characters> ChangePlayerAvatarView;
 
-		public WorldCell[,] GetWorldVisual(Point playerPosition)
+		public void ChangeOneCell(int row, int column, WorldCell cell)=>
+			ChangeWorldCellView(row, column, cell);
+
+        public void ChangeOneCell(int row, int column, Characters character) =>
+            ChangePlayerAvatarView(row, column, character);
+
+
+        public WorldCell[,] GetWorldVisual(Point playerPosition)
 		{
 			var table = new WorldCell[ViewFieldSize,ViewFieldSize];
             var viewStartPoint = new Point(playerPosition.X - ViewFieldSize / 2, playerPosition.Y - ViewFieldSize / 2);
@@ -27,9 +35,9 @@ namespace PixelRPG
 						table[i, j] = game.World[viewStartPoint.X + i, viewStartPoint.Y + j];
 					else
 						table[i, j] = WorldCell.OutOfBounds;
-					if (ChangeWorldCell!=null) ChangeWorldCell(row, column, table[row, column]);
+					if (ChangeWorldCellView!=null) ChangeWorldCellView(row, column, table[row, column]);
                 }
-            if (ChangeWorldCell != null) ChangeWorldCell(ViewFieldSize / 2, ViewFieldSize / 2, WorldCell.Character);
+            if (ChangePlayerAvatarView != null) ChangePlayerAvatarView(ViewFieldSize / 2, ViewFieldSize / 2, game.PlayerView);
             return table;
         }
 	}

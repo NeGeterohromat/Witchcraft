@@ -29,10 +29,18 @@ namespace PixelRPG
             SetGameTable(table);
             var tableView = visual.GetWorldVisual(game.PlayerPosition);
             SetImages(table, tableView);
-            visual.ChangeWorldCell += (row, column, worldCell) =>
+            visual.ChangeWorldCellView += (row, column, worldCell) =>
             {
                 var image = Image.FromFile(game.FileName(worldCell));
-                ((PictureBox)table.GetControlFromPosition(column, row)).BackgroundImage = image;
+                var pict = (PictureBox)table.GetControlFromPosition(column, row);
+                ((PictureBox)table.GetControlFromPosition(column, row)).Image = image;
+                ((PictureBox)table.GetControlFromPosition(column, row)).SizeMode = PictureBoxSizeMode.Zoom;
+            };
+            visual.ChangePlayerAvatarView += (row, column, character) =>
+            {
+                var image = Image.FromFile(game.FileName(character));
+                var pict = (PictureBox)table.GetControlFromPosition(column, row);
+                ((PictureBox)table.GetControlFromPosition(column, row)).Image = image;
                 ((PictureBox)table.GetControlFromPosition(column, row)).SizeMode = PictureBoxSizeMode.Zoom;
             };
             var keyBar = new TextBox();
@@ -42,8 +50,6 @@ namespace PixelRPG
             keyBar.Focus();
             keyBar.Select();
         }
-
-
 
         public void SetGameTable(TableLayoutPanel table)
         {
@@ -60,12 +66,12 @@ namespace PixelRPG
                 for (int j = 0; j < GameVisual.ViewFieldSize; j++)
                 {
                     var image = Image.FromFile(game.FileName(tableView[i, j]));
-                    var p = new PictureBox() { Dock = DockStyle.Fill, BackgroundImage = image };
+                    var p = new PictureBox() { Dock = DockStyle.Fill, Image = image };
                     p.SizeMode = PictureBoxSizeMode.Zoom;
                     table.Controls.Add(p, j, i);
                 }
-            var playerImage = Image.FromFile(game.FileName(WorldCell.Character));
-            ((PictureBox)table.GetControlFromPosition(GameVisual.ViewFieldSize/2, GameVisual.ViewFieldSize/2)).BackgroundImage = playerImage;
+            var playerImage = Image.FromFile(game.FileName(game.PlayerView));
+            ((PictureBox)table.GetControlFromPosition(GameVisual.ViewFieldSize/2, GameVisual.ViewFieldSize/2)).Image = playerImage;
         }
     }
 }
