@@ -6,18 +6,16 @@ using System.Threading.Tasks;
 
 namespace PixelRPG
 {
-    public enum WorldCell
-    {
-        OutOfBounds,
-        Empty,
-        Grass,
-        Tree
-    }
     public enum Characters
     {
-        BaseDown,
-        BaseRight,
-        BaseLeft,
-        BaseUp
+        Base,
+        Cool
+    }
+    public enum Sides
+    {
+        Left,
+        Right,
+        Up,
+        Down
     }
 }

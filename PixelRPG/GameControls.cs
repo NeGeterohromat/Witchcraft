@@ -6,6 +6,20 @@ public class GameControls
 {
     private GameModel game;
     private GameVisual visual;
+    private static Dictionary<char, Sides> turns = new Dictionary<char, Sides>()
+    {
+        { 'A',Sides.Left },
+        {'S',Sides.Down },
+        {'D',Sides.Right },
+        {'W',Sides.Up }
+    };
+    private static Dictionary<Sides,Point> moves = new Dictionary<Sides,Point>()
+    {
+        {Sides.Left,new Point(-1,0) },
+        {Sides.Down, new Point(0,1) },
+        {Sides.Right, new Point(1,0) },
+        {Sides.Up, new Point(0,-1)}
+    };
     public GameControls( GameModel game, GameVisual visual)
 	{
         this.game = game;
@@ -20,32 +34,19 @@ public class GameControls
     {
         keyBar.KeyPress += (sender, e) =>
         {
-            Point newPosition = new Point(-1,-1);
-            var newView = game.PlayerView;
-            if (AreCharsEqual(e.KeyChar, (char)Keys.A))
+            var newPosition = new Point(-1,-1);
+            var newView = game.Player.Direction;
+            var controlChar = char.ToUpper(e.KeyChar);
+            if (turns.ContainsKey(controlChar))
             {
-                newView = Characters.BaseLeft;
-                newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y - 1);
+                newView = turns[controlChar];
+                var point = moves[newView];
+                newPosition = new Point(game.Player.Position.X+point.X, game.Player.Position.Y+point.Y);
             }
-            if (AreCharsEqual(e.KeyChar, (char)Keys.S))
-            {
-                newView = Characters.BaseDown;
-                newPosition = new Point(game.PlayerPosition.X + 1, game.PlayerPosition.Y);
-            }
-            if (AreCharsEqual(e.KeyChar, (char)Keys.D))
-            {
-                newView = Characters.BaseRight;
-                newPosition = new Point(game.PlayerPosition.X, game.PlayerPosition.Y + 1);
-            }
-            if (AreCharsEqual(e.KeyChar, (char)Keys.W))
-            {
-                newView = Characters.BaseUp;
-                newPosition = new Point(game.PlayerPosition.X - 1, game.PlayerPosition.Y);
-            }
-            if (newView != game.PlayerView)
+            if (newView != game.Player.Direction)
             {
                 game.SetPlayerView(newView);
-                visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, newView);
+                visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, new Player(game.Player.Type,game.Player.Position,newView));
             }
             else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
             {
@@ -54,7 +55,4 @@ public class GameControls
             }
         };
     }
-
-    public static bool AreCharsEqual(char char1, char char2) =>
-        char1 == char2 || char.ToUpper(char1) == char2 || char1==char.ToUpper(char2);
 }

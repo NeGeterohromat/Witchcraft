@@ -7,37 +7,41 @@ namespace PixelRPG
 	{
 		private GameModel game;
 		public const int ViewFieldSize = 20;
-		public GameVisual(GameModel game)
+		private WorldElement[,] CurrentView = new WorldElement[ViewFieldSize, ViewFieldSize];
+
+        public GameVisual(GameModel game)
 		{
 			this.game = game;
 		}
 
-		public event Action<int,int,WorldCell> ChangeWorldCellView;
-		public event Action<int, int, Characters> ChangePlayerAvatarView;
+		public event Action<int,int,WorldElement> ChangeWorldCellView;
+		public event Action<int, int, Player> ChangePlayerAvatarView;
 
-		public void ChangeOneCell(int row, int column, WorldCell cell)=>
+        public void ChangeOneCell(int row, int column, WorldElement cell)=>
 			ChangeWorldCellView(row, column, cell);
 
-        public void ChangeOneCell(int row, int column, Characters character) =>
-            ChangePlayerAvatarView(row, column, character);
+        public void ChangeOneCell(int row, int column, Player player) =>
+            ChangePlayerAvatarView(row, column, player);
 
 
-        public WorldCell[,] GetWorldVisual(Point playerPosition)
+        public WorldElement[,] GetWorldVisual(Point playerPosition)
 		{
-			var table = new WorldCell[ViewFieldSize,ViewFieldSize];
+			var table = CurrentView;
             var viewStartPoint = new Point(playerPosition.X - ViewFieldSize / 2, playerPosition.Y - ViewFieldSize / 2);
 			for (int i = 0; i < ViewFieldSize; i++)
 				for (int j = 0; j < ViewFieldSize; j++)
 				{
 					var row = i;
 					var column = j;
-					if (game.InBounds(new Point(viewStartPoint.X + i, viewStartPoint.Y + j)))
-						table[i, j] = game.World[viewStartPoint.X + i, viewStartPoint.Y + j];
-					else
-						table[i, j] = WorldCell.OutOfBounds;
-					if (ChangeWorldCellView!=null) ChangeWorldCellView(row, column, table[row, column]);
-                }
-            if (ChangePlayerAvatarView != null) ChangePlayerAvatarView(ViewFieldSize / 2, ViewFieldSize / 2, game.PlayerView);
+					var newCell = game.InBounds(new Point(viewStartPoint.X + i, viewStartPoint.Y + j)) ? 
+						game.World[viewStartPoint.X + i, viewStartPoint.Y + j] : game.OutOfBounds;
+					if (newCell != CurrentView[i, j])
+					{
+						table[i, j] = newCell;
+                        if (ChangeWorldCellView != null) ChangeWorldCellView(row, column, table[row, column]);
+                    }				
+				}
+            if (ChangePlayerAvatarView != null) ChangePlayerAvatarView(ViewFieldSize / 2, ViewFieldSize / 2, game.Player);
             return table;
         }
 	}
