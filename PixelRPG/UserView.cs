@@ -13,8 +13,10 @@ namespace PixelRPG
         private Menu menu;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
+        private PictureBox currentInventorySlot;
         private PictureBox firstSelectedSlotInInventory;
         private PictureBox secondSelectedSlotInInventory;
+        public const float CurrentSlotPercentSize = 10f;
         public const int ButtonBasedTextSize = 15;
         public const string ButtonBasedFontFamily = "Arial";
         public readonly Color BaseWorldColor = Color.FromArgb(119, 185, 129);
@@ -60,6 +62,30 @@ namespace PixelRPG
                 else
                     secondSelectedSlotInInventory = null;
             };
+            visual.ChangeCurrentInventorySlotView += (el) =>
+            {
+                currentInventorySlot.Image = Image.FromFile(game.FileName(el));
+            };
+            var currentSlot = new PictureBox()
+            {
+                BackColor = Color.Gray,
+                Image = Image.FromFile(game.FileName(game.Player.Inventory.InventorySlots[0, 0])),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Size = new Size((int)(ClientSize.Width*0.01*CurrentSlotPercentSize),(int)(ClientSize.Height*0.01*CurrentSlotPercentSize)),
+                Location = new Point((int)(ClientSize.Width*0.01*(100-CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)))
+            };
+            currentSlot.Paint += (sender, e) =>
+            {
+                var penWidth = currentSlot.Width / 20;
+                e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, currentSlot.Width - 2, currentSlot.Height - 2);
+            };
+            currentInventorySlot = currentSlot;
+            SizeChanged += (sender, e) =>
+            {
+                currentInventorySlot.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                currentInventorySlot.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)));
+            };
+            Controls.Add(currentSlot);
             Controls.Add(table);
             Controls.Add(keyBar);
             keyBar.Focus();
@@ -149,6 +175,7 @@ namespace PixelRPG
                 e.Graphics.DrawRectangle(new Pen(Color.Black,penWidth), 0, 0, currentSlot.Width-2, currentSlot.Height-2);
             };
             Controls.Remove(gameView);
+            Controls.Remove(currentInventorySlot);
             Controls.Add(table);
             lastInventoryView = table;
         }
@@ -159,6 +186,7 @@ namespace PixelRPG
             secondSelectedSlotInInventory = null;
             game.Player.Inventory.ClearSlots();
             Controls.Remove(lastInventoryView);
+            Controls.Add(currentInventorySlot);
             Controls.Add(gameView);
         }
     }

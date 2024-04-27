@@ -56,7 +56,8 @@ public class GameControls
             {
                 Move(newPosition);
                 game.SetPlayerPosition(newPosition);
-                game.PickItem(newPosition);
+                if (game.PickItem(newPosition))
+                    visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
         };
         keyBar.KeyPress += (sender, e) => 
@@ -76,6 +77,7 @@ public class GameControls
                     game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
                     game.Player.Inventory.InventorySlots[0, 0] = game.WorldElementsList[0];
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
+                    visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
                 }
 
         };
@@ -101,6 +103,12 @@ public class GameControls
                     visual.ChangeInventoryCell(1, game.Player.Inventory.InventorySlots[data.First.X,data.First.Y]);
                     visual.ChangeInventoryCell(2, game.Player.Inventory.InventorySlots[data.Second.X, data.Second.Y]);
                 }
+                visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
+            }
+            if (controlChar == (char)Keys.E)
+            {
+                if (!IsInventoryOpen && game.Player.Inventory.SetItemInFirstSlot())
+                    visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
         };
     }

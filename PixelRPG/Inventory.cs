@@ -20,6 +20,26 @@ namespace PixelRPG
 
         public void ClearSlots()=> selectedSlots.Clear();
 
+        public bool SetItemInFirstSlot()
+        {
+            if (InventorySlots[0, 0].Name != "Empty") return false;
+            var result = false;
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                    if (InventorySlots[i, j].Name != "Empty")
+                    {
+                        InventorySlots[0,0] = InventorySlots[i,j];
+                        InventorySlots[i, j] = new WorldElement("Empty",true,false,int.MaxValue);
+                        result = true;
+                        break;
+                    }
+                if (result)
+                    break;
+            }
+            return result;
+        }
+
         public (bool IsComplete, (int X, int Y) First, (int X, int Y) Second) ChangeSelectedSlots()
         {
             if (selectedSlots.Count == 2)

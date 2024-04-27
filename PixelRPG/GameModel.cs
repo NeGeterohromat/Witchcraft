@@ -11,7 +11,9 @@ namespace PixelRPG
 		{
 			new WorldElement("Empty",true,false,int.MaxValue),
 			new WorldElement("Grass",true,false,0,new WorldElement("Turf",true,true,int.MaxValue)),
-			new WorldElement("Tree",false,false,0,new WorldElement("Wood",true,true,int.MaxValue))
+			new WorldElement("Tree",false,false,0,new WorldElement("Wood",true,true,int.MaxValue)),
+			new WorldElement("Stone",true,true,int.MaxValue),
+			new WorldElement("Bush",false,false,0,new WorldElement("Stick",true,true,int.MaxValue))
 		};
 		public GameModel(int worldSize)
 		{

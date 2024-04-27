@@ -16,12 +16,16 @@ namespace PixelRPG
 
 		public event Action<int,int,WorldElement,Player> ChangeOneCellView;
 		public event Action<int,WorldElement> ChangeInventoryCellView;
+        public event Action<WorldElement> ChangeCurrentInventorySlotView;
 
         public void ChangeInventoryCell(int number, WorldElement cell) =>
 			ChangeInventoryCellView(number, cell);
-		
 
-		public void ChangeOneCellByWorldCoords(int row, int column, WorldElement cell = null, Player player = null)
+		public void ChangeCurrentInventorySlot(WorldElement el) =>
+			ChangeCurrentInventorySlotView(el);
+
+
+        public void ChangeOneCellByWorldCoords(int row, int column, WorldElement cell = null, Player player = null)
 		{
 			var viewRow =row - game.Player.Position.X + ViewFieldSize/2;
 			var viewColumn =column- game.Player.Position.Y + ViewFieldSize/2;
