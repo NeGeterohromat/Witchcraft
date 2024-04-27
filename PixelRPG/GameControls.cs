@@ -20,12 +20,12 @@ public class GameControls
         {Sides.Right, new Point(1,0) },
         {Sides.Up, new Point(0,-1)}
     };
+    private bool IsInventoryOpen = false;
     public GameControls( GameModel game, GameVisual visual)
 	{
         this.game = game;
         this.visual = visual;
 	}
-    private bool IsInventoryOpen=false;
 
     public event Action ViewInventory;
     public event Action CloseInventory;
@@ -93,6 +93,15 @@ public class GameControls
                     ViewInventory();
                     IsInventoryOpen = true;
                 }
+            if (controlChar == (char)Keys.J)
+            {
+                var data = game.Player.Inventory.ChangeSelectedSlots();
+                if (data.IsComplete)
+                {
+                    visual.ChangeInventoryCell(1, game.Player.Inventory.InventorySlots[data.First.X,data.First.Y]);
+                    visual.ChangeInventoryCell(2, game.Player.Inventory.InventorySlots[data.Second.X, data.Second.Y]);
+                }
+            }
         };
     }
 }

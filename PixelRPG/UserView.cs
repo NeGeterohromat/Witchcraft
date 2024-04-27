@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 
@@ -12,6 +13,8 @@ namespace PixelRPG
         private Menu menu;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
+        private PictureBox firstSelectedSlotInInventory;
+        private PictureBox secondSelectedSlotInInventory;
         public const int ButtonBasedTextSize = 15;
         public const string ButtonBasedFontFamily = "Arial";
         public readonly Color BaseWorldColor = Color.FromArgb(119, 185, 129);
@@ -43,6 +46,19 @@ namespace PixelRPG
                 var pict = (PictureBox)table.GetControlFromPosition(row, column);
                 pict.Image = image;
                 pict.SizeMode = PictureBoxSizeMode.Zoom;
+            };
+            visual.ChangeInventoryCellView += (number, cell) =>
+            {
+                var image = Image.FromFile(game.FileName(cell));
+                var pict = number == 1 ? firstSelectedSlotInInventory : secondSelectedSlotInInventory;
+                pict.Image = image;
+                pict.SizeMode = PictureBoxSizeMode.Zoom;
+                pict.Tag = Color.Transparent;
+                pict.Refresh();
+                if (number == 1)
+                    firstSelectedSlotInInventory = null;
+                else
+                    secondSelectedSlotInInventory = null;
             };
             Controls.Add(table);
             Controls.Add(keyBar);
@@ -88,9 +104,36 @@ namespace PixelRPG
             for (int i = 0; i < inventory.InventorySlots.GetLength(0); i++)
                 for (int j = 0; j < inventory.InventorySlots.GetLength(1); j++)
                 {
+                    var row = i;
+                    var column = j;
                     var image = Image.FromFile(game.FileName(inventory.InventorySlots[i,j]));
                     var p = new PictureBox() {BackColor = Color.White,Image = image,Dock = DockStyle.Fill };
                     p.SizeMode = PictureBoxSizeMode.Zoom;
+                    p.Tag = Color.Transparent;
+                    p.Paint += (sender, e) =>
+                    {
+                        var penWidth = p.Width / 4;
+                        e.Graphics.DrawRectangle(new Pen((Color)p.Tag, penWidth), 0, 0, p.Width - 2, p.Height - 2);
+                    };
+                    p.Click += (sender, e) =>
+                    {
+                        p.Tag = Color.Green;
+                        p.Refresh();
+                        if (game.Player.Inventory.AddSlot(row, column))
+                        {
+                            if (firstSelectedSlotInInventory == null)
+                                firstSelectedSlotInInventory = p;
+                            else
+                                secondSelectedSlotInInventory = p;
+                        }
+                        else
+                        {
+                            firstSelectedSlotInInventory.Tag = Color.Transparent;
+                            firstSelectedSlotInInventory.Refresh();
+                            firstSelectedSlotInInventory = secondSelectedSlotInInventory;
+                            secondSelectedSlotInInventory = p;
+                        }
+                    };
                     table.Controls.Add(p, j,i);
                 }
             for (int i = 0; i<inventory.InventorySlots.GetLength(0); i++)
@@ -102,7 +145,7 @@ namespace PixelRPG
             currentSlot.BorderStyle = BorderStyle.FixedSingle;
             currentSlot.Paint += (sender, e) =>
             {
-                var penWidth = currentSlot.Width / 5;
+                var penWidth = currentSlot.Width / 6;
                 e.Graphics.DrawRectangle(new Pen(Color.Black,penWidth), 0, 0, currentSlot.Width-2, currentSlot.Height-2);
             };
             Controls.Remove(gameView);
@@ -112,6 +155,9 @@ namespace PixelRPG
 
         public void CloseInventory()
         {
+            firstSelectedSlotInInventory = null;
+            secondSelectedSlotInInventory = null;
+            game.Player.Inventory.ClearSlots();
             Controls.Remove(lastInventoryView);
             Controls.Add(gameView);
         }

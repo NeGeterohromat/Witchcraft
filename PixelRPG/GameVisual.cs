@@ -15,6 +15,11 @@ namespace PixelRPG
 		}
 
 		public event Action<int,int,WorldElement,Player> ChangeOneCellView;
+		public event Action<int,WorldElement> ChangeInventoryCellView;
+
+        public void ChangeInventoryCell(int number, WorldElement cell) =>
+			ChangeInventoryCellView(number, cell);
+		
 
 		public void ChangeOneCellByWorldCoords(int row, int column, WorldElement cell = null, Player player = null)
 		{
