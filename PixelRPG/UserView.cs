@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
 
 namespace PixelRPG
 {
@@ -9,15 +10,17 @@ namespace PixelRPG
         private GameVisual visual;
         private GameControls controls;
         private Menu menu;
+        private TableLayoutPanel lastInventoryView;
+        private TableLayoutPanel gameView;
         public const int ButtonBasedTextSize = 15;
         public const string ButtonBasedFontFamily = "Arial";
-        public readonly Color BaseWorldColor = Color.FromArgb(119,185,129);
+        public readonly Color BaseWorldColor = Color.FromArgb(119, 185, 129);
         public UserView()
         {
             menu = new Menu();
             menu.StartGame += () => StartGame();
             menu.CloseForm += () => Close();
-            SizeChanged += (sender, e) =>  menu.ChangeButtonTextSize(ClientSize.Height*ButtonBasedTextSize/300); 
+            SizeChanged += (sender, e) => menu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
             Controls.Add(menu.MenuTable);
         }
 
@@ -27,13 +30,16 @@ namespace PixelRPG
             game = new GameModel(40);
             visual = new GameVisual(game);
             controls = new GameControls(game, visual);
+            var keyBar = new TextBox() { Size = new Size(0,0)};
+            controls.SetKeyCommands(keyBar);
+            controls.ViewInventory += () => ViewInventory(game.Player.Inventory);
+            controls.CloseInventory += () => CloseInventory();
             var tableView = visual.GetWorldVisual(game.Player.Position);
             var table = SetImages(SetGameTable(), tableView);
-            var keyBar = new TextBox();
-            controls.SetKeyCommands(keyBar);
-            visual.ChangeOneCellView += (row, column, worldCell,player) =>
+            gameView = table;
+            visual.ChangeOneCellView += (row, column, worldCell, player) =>
             {
-                var image = player==null? Image.FromFile(game.FileName(worldCell)): Image.FromFile(game.FileName(player));
+                var image = player == null ? Image.FromFile(game.FileName(worldCell)) : Image.FromFile(game.FileName(player));
                 var pict = (PictureBox)table.GetControlFromPosition(row, column);
                 pict.Image = image;
                 pict.SizeMode = PictureBoxSizeMode.Zoom;
@@ -66,8 +72,48 @@ namespace PixelRPG
                     table.Controls.Add(p, i, j);
                 }
             var playerImage = Image.FromFile(game.FileName(game.Player));
-            ((PictureBox)table.GetControlFromPosition(GameVisual.ViewFieldSize/2, GameVisual.ViewFieldSize/2)).Image = playerImage;
+            ((PictureBox)table.GetControlFromPosition(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2)).Image = playerImage;
             return table;
+        }
+
+        public void ViewInventory(Inventory inventory)
+        {
+            var table = new TableLayoutPanel() {BackColor = Color.Gray, Dock = DockStyle.Fill };
+            for (int i = 0; i < inventory.InventorySlots.GetLength(0); i++)
+            {
+                table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 2 / inventory.InventorySlots.GetLength(1)));
+                table.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / inventory.InventorySlots.GetLength(0)));
+            }
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 2));
+            for (int i = 0; i < inventory.InventorySlots.GetLength(0); i++)
+                for (int j = 0; j < inventory.InventorySlots.GetLength(1); j++)
+                {
+                    var image = Image.FromFile(game.FileName(inventory.InventorySlots[i,j]));
+                    var p = new PictureBox() {BackColor = Color.White,Image = image,Dock = DockStyle.Fill };
+                    p.SizeMode = PictureBoxSizeMode.Zoom;
+                    table.Controls.Add(p, j,i);
+                }
+            for (int i = 0; i<inventory.InventorySlots.GetLength(0); i++)
+            {
+                var p = new PictureBox() { BackColor = Color.Transparent,Dock = DockStyle.Fill };
+                table.Controls.Add(p, inventory.InventorySlots.GetLength(1),i);
+            }
+            var currentSlot = (PictureBox)table.GetControlFromPosition(0, 0);
+            currentSlot.BorderStyle = BorderStyle.FixedSingle;
+            currentSlot.Paint += (sender, e) =>
+            {
+                var penWidth = currentSlot.Width / 5;
+                e.Graphics.DrawRectangle(new Pen(Color.Black,penWidth), 0, 0, currentSlot.Width-2, currentSlot.Height-2);
+            };
+            Controls.Remove(gameView);
+            Controls.Add(table);
+            lastInventoryView = table;
+        }
+
+        public void CloseInventory()
+        {
+            Controls.Remove(lastInventoryView);
+            Controls.Add(gameView);
         }
     }
 }

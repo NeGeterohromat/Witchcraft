@@ -25,6 +25,10 @@ public class GameControls
         this.game = game;
         this.visual = visual;
 	}
+    private bool IsInventoryOpen=false;
+
+    public event Action ViewInventory;
+    public event Action CloseInventory;
 
     public void Move(Point newPosition)=>
         visual.GetWorldVisual(newPosition);
@@ -52,6 +56,7 @@ public class GameControls
             {
                 Move(newPosition);
                 game.SetPlayerPosition(newPosition);
+                game.PickItem(newPosition);
             }
         };
         keyBar.KeyPress += (sender, e) => 
@@ -64,6 +69,29 @@ public class GameControls
                 {
                     game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y,frontElement.Drop);
+                }
+            if (controlChar == (char)Keys.P)
+                if (frontElement.Name == "Empty" && game.Player.Inventory.InventorySlots[0, 0].Name != "Empty")
+                {
+                    game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
+                    game.Player.Inventory.InventorySlots[0, 0] = game.WorldElementsList[0];
+                    visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
+                }
+
+        };
+        keyBar.KeyPress += (sender, e) =>
+        {
+            var controlChar = char.ToUpper(e.KeyChar);
+            if (controlChar == (char)Keys.I)
+                if (IsInventoryOpen)
+                {
+                    CloseInventory();
+                    IsInventoryOpen = false;
+                }
+                else
+                {
+                    ViewInventory();
+                    IsInventoryOpen = true;
                 }
         };
     }

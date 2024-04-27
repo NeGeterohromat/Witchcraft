@@ -29,6 +29,18 @@ namespace PixelRPG
 			return world;
 		}
 
+		public bool PickItem(Point itemPosition)
+		{
+			var result = false;
+			if (InBounds(itemPosition) && World[itemPosition.X,itemPosition.Y].IsItem)
+				if (Player.Inventory.AddInFirstEmptySlot(World[itemPosition.X, itemPosition.Y]))
+				{
+					World[itemPosition.X, itemPosition.Y] = WorldElementsList[0];
+					result = true;
+                }
+			return result;
+		}
+
 		public void SetPlayerPosition(Point newPosition)
 		{
 			if (InBounds(newPosition))
