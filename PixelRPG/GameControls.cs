@@ -46,7 +46,7 @@ public class GameControls
             if (newView != game.Player.Direction)
             {
                 game.SetPlayerView(newView);
-                visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, new Player(game.Player.Type,game.Player.Position,newView));
+                visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2,null, new Player(game.Player.Type,game.Player.Position,newView));
             }
             else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
             {

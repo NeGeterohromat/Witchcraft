@@ -15,35 +15,34 @@ namespace PixelRPG
         public UserView()
         {
             menu = new Menu();
+            var keyBar = new TextBox() { Size = new Size(0,0)};
+            menu.SetControls(keyBar);
             menu.StartGame += () => StartGame();
-            SizeChanged += (sender, e) => { menu.ChangeButtonTextSize(ClientSize.Height*ButtonBasedTextSize/300); };
+            menu.CloseForm += () => Close();
+            SizeChanged += (sender, e) =>  menu.ChangeButtonTextSize(ClientSize.Height*ButtonBasedTextSize/300); 
+            Controls.Add(keyBar);
             Controls.Add(menu.MenuTable);
+            keyBar.Focus();
+            keyBar.Select();
         }
 
         public void StartGame()
         {
+            Controls.Clear();
             game = new GameModel(40);
             visual = new GameVisual(game);
             controls = new GameControls(game, visual);
-            Controls.Clear();
             var tableView = visual.GetWorldVisual(game.Player.Position);
             var table = SetImages(SetGameTable(), tableView);
-            visual.ChangeWorldCellView += (row, column, worldCell) =>
-            {
-                var image = Image.FromFile(game.FileName(worldCell));
-                var pict = (PictureBox)table.GetControlFromPosition(column, row);
-                ((PictureBox)table.GetControlFromPosition(row,column)).Image = image;
-                ((PictureBox)table.GetControlFromPosition(row, column)).SizeMode = PictureBoxSizeMode.Zoom;
-            };
-            visual.ChangePlayerAvatarView += (row, column, character) =>
-            {
-                var image = Image.FromFile(game.FileName(character));
-                var pict = (PictureBox)table.GetControlFromPosition(column, row);
-                ((PictureBox)table.GetControlFromPosition(row, column)).Image = image;
-                ((PictureBox)table.GetControlFromPosition(row, column)).SizeMode = PictureBoxSizeMode.Zoom;
-            };
             var keyBar = new TextBox();
             controls.SetKeyCommands(keyBar);
+            visual.ChangeOneCellView += (row, column, worldCell,player) =>
+            {
+                var image = player==null? Image.FromFile(game.FileName(worldCell)): Image.FromFile(game.FileName(player));
+                var pict = (PictureBox)table.GetControlFromPosition(row, column);
+                pict.Image = image;
+                pict.SizeMode = PictureBoxSizeMode.Zoom;
+            };
             Controls.Add(table);
             Controls.Add(keyBar);
             keyBar.Focus();

@@ -7,26 +7,22 @@ namespace PixelRPG
 	{
 		private GameModel game;
 		public const int ViewFieldSize = 20;
-		private WorldElement[,] CurrentView = new WorldElement[ViewFieldSize, ViewFieldSize];
+		private WorldElement[,] CurrentWorldView = new WorldElement[ViewFieldSize, ViewFieldSize];
 
         public GameVisual(GameModel game)
 		{
 			this.game = game;
 		}
 
-		public event Action<int,int,WorldElement> ChangeWorldCellView;
-		public event Action<int, int, Player> ChangePlayerAvatarView;
+		public event Action<int,int,WorldElement,Player> ChangeOneCellView;
 
-        public void ChangeOneCell(int row, int column, WorldElement cell)=>
-			ChangeWorldCellView(row, column, cell);
-
-        public void ChangeOneCell(int row, int column, Player player) =>
-            ChangePlayerAvatarView(row, column, player);
+        public void ChangeOneCell(int row, int column, WorldElement cell=null, Player player=null)=>
+			ChangeOneCellView(row, column, cell,player);
 
 
         public WorldElement[,] GetWorldVisual(Point playerPosition)
 		{
-			var table = CurrentView;
+			var table = CurrentWorldView;
             var viewStartPoint = new Point(playerPosition.X - ViewFieldSize / 2, playerPosition.Y - ViewFieldSize / 2);
 			for (int i = 0; i < ViewFieldSize; i++)
 				for (int j = 0; j < ViewFieldSize; j++)
@@ -35,13 +31,13 @@ namespace PixelRPG
 					var column = j;
 					var newCell = game.InBounds(new Point(viewStartPoint.X + i, viewStartPoint.Y + j)) ? 
 						game.World[viewStartPoint.X + i, viewStartPoint.Y + j] : game.OutOfBounds;
-					if (newCell != CurrentView[i, j])
+					if (newCell != CurrentWorldView[i, j])
 					{
 						table[i, j] = newCell;
-                        if (ChangeWorldCellView != null) ChangeWorldCellView(row, column, table[row, column]);
+                        if (ChangeOneCellView != null) ChangeOneCellView(row, column, table[row, column],null);
                     }				
 				}
-            if (ChangePlayerAvatarView != null) ChangePlayerAvatarView(ViewFieldSize / 2, ViewFieldSize / 2, game.Player);
+            if (ChangeOneCellView != null) ChangeOneCellView(ViewFieldSize / 2, ViewFieldSize / 2,null, game.Player);
             return table;
         }
 	}
