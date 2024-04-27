@@ -16,8 +16,26 @@ namespace PixelRPG
 
 		public event Action<int,int,WorldElement,Player> ChangeOneCellView;
 
-        public void ChangeOneCell(int row, int column, WorldElement cell=null, Player player=null)=>
-			ChangeOneCellView(row, column, cell,player);
+		public void ChangeOneCellByWorldCoords(int row, int column, WorldElement cell = null, Player player = null)
+		{
+			var viewRow =row - game.Player.Position.X + ViewFieldSize/2;
+			var viewColumn =column- game.Player.Position.Y + ViewFieldSize/2;
+			if (viewRow >= 0 && viewRow < ViewFieldSize && viewColumn >= 0 && viewColumn < ViewFieldSize)
+			{
+                if (cell != null)
+                    CurrentWorldView[viewRow, viewColumn] = cell;
+                ChangeOneCellView(viewRow, viewColumn, cell, player);
+			}
+			else
+				throw new Exception("OutOfViewBounds");
+		}
+
+		public void ChangeOneCell(int row, int column, WorldElement cell = null, Player player = null)
+		{
+			if (cell!=null)
+				CurrentWorldView[row, column] = cell;
+			ChangeOneCellView(row, column, cell, player);
+		}
 
 
         public WorldElement[,] GetWorldVisual(Point playerPosition)

@@ -6,12 +6,12 @@ namespace PixelRPG
 	{
 		public Player Player { get; private set; }
 		public WorldElement[,] World { get; private set; }
-		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false);
+		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, false, int.MaxValue);
 		public readonly List<WorldElement> WorldElementsList = new List<WorldElement>()
 		{
-			new WorldElement("Empty",true),
-			new WorldElement("Grass",true),
-			new WorldElement("Tree",false)
+			new WorldElement("Empty",true,false,int.MaxValue),
+			new WorldElement("Grass",true,false,0,new WorldElement("Turf",true,true,int.MaxValue)),
+			new WorldElement("Tree",false,false,0,new WorldElement("Wood",true,true,int.MaxValue))
 		};
 		public GameModel(int worldSize)
 		{

@@ -10,10 +10,16 @@ namespace PixelRPG
     {
         public readonly string Name;
         public readonly bool CanPlayerMoveIn;
-        public WorldElement(string name, bool canPlayerMoveIn)
+        public readonly bool IsItem;
+        public readonly int BreakLevel;
+        public readonly WorldElement Drop;
+        public WorldElement(string name, bool canPlayerMoveIn, bool isItem, int breakLevel, WorldElement drop = null)
         {
             Name = name;
             CanPlayerMoveIn = canPlayerMoveIn;
+            IsItem = isItem;
+            BreakLevel = breakLevel;
+            Drop = drop;
         }
     }
 }

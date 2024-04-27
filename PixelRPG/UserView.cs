@@ -15,15 +15,10 @@ namespace PixelRPG
         public UserView()
         {
             menu = new Menu();
-            var keyBar = new TextBox() { Size = new Size(0,0)};
-            menu.SetControls(keyBar);
             menu.StartGame += () => StartGame();
             menu.CloseForm += () => Close();
             SizeChanged += (sender, e) =>  menu.ChangeButtonTextSize(ClientSize.Height*ButtonBasedTextSize/300); 
-            Controls.Add(keyBar);
             Controls.Add(menu.MenuTable);
-            keyBar.Focus();
-            keyBar.Select();
         }
 
         public void StartGame()

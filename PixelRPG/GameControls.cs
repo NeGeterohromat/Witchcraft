@@ -54,5 +54,17 @@ public class GameControls
                 game.SetPlayerPosition(newPosition);
             }
         };
+        keyBar.KeyPress += (sender, e) => 
+        {
+            var frontPoint = new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y);
+            var frontElement = game.InBounds(frontPoint) ? game.World[frontPoint.X, frontPoint.Y] : game.OutOfBounds;
+            var controlChar = char.ToUpper(e.KeyChar);
+            if (controlChar ==(char)Keys.L)
+                if (frontElement.BreakLevel <= 0)
+                {
+                    game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
+                    visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y,frontElement.Drop);
+                }
+        };
     }
 }
