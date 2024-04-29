@@ -27,8 +27,10 @@ public class GameControls
         this.visual = visual;
 	}
 
-    public event Action ViewInventory;
+    public event Action OpenInventory;
     public event Action CloseInventory;
+    public event Action OpenMenu;
+    public event Action<Inventory> ChangeCraftImages;
 
     public void Move(Point newPosition)=>
         visual.GetWorldVisual(newPosition);
@@ -36,6 +38,11 @@ public class GameControls
 
     public void SetKeyCommands(TextBox keyBar)
     {
+        keyBar.KeyPress += (sender, e) =>
+        {
+            if (e.KeyChar == (char)Keys.Escape)
+                OpenMenu();
+        };
         keyBar.KeyPress += (sender, e) =>
         {
             var newPosition = new Point(-1,-1);
@@ -66,7 +73,7 @@ public class GameControls
             var frontElement = game.InBounds(frontPoint) ? game.World[frontPoint.X, frontPoint.Y] : game.OutOfBounds;
             var controlChar = char.ToUpper(e.KeyChar);
             if (controlChar ==(char)Keys.L)
-                if (frontElement.BreakLevel <= 0)
+                if (frontElement.BreakLevel <= game.Player.Inventory.InventorySlots[0,0].PowerToBreakOtherEl)
                 {
                     game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y,frontElement.Drop);
@@ -92,17 +99,25 @@ public class GameControls
                 }
                 else
                 {
-                    ViewInventory();
+                    OpenInventory();
                     IsInventoryOpen = true;
                 }
             if (controlChar == (char)Keys.J)
             {
                 var data = game.Player.Inventory.ChangeSelectedSlots();
                 if (data.IsComplete)
-                {
-                    visual.ChangeInventoryCell(1, game.Player.Inventory.InventorySlots[data.First.X,data.First.Y]);
-                    visual.ChangeInventoryCell(2, game.Player.Inventory.InventorySlots[data.Second.X, data.Second.Y]);
-                }
+                    switch (data.First.Type)
+                    {
+                        case InventoryTypes.Main:
+                            ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.InventorySlots, data.Second.Type, data); 
+                            break;
+                        case InventoryTypes.Craft:
+                            ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.CraftZone, data.Second.Type, data);
+                            break;
+                        case InventoryTypes.Result:
+                            ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.CraftResult, data.Second.Type, data);
+                            break;
+                    }
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
             if (controlChar == (char)Keys.E)
@@ -110,6 +125,33 @@ public class GameControls
                 if (!IsInventoryOpen && game.Player.Inventory.SetItemInFirstSlot())
                     visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
+            if (controlChar == (char)Keys.C)
+            {
+                if (IsInventoryOpen && game.Player.Inventory.Craft(game.Crafts2by2))
+                {
+                    ChangeCraftImages(game.Player.Inventory);
+                }
+            }
         };
+    }
+
+    public void ChangeInventoryVisualSwitchSecondType(WorldElement[,] first, InventoryTypes second, 
+        (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data)
+    {
+        switch(second)
+        {
+            case InventoryTypes.Main:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, game.Player.Inventory.InventorySlots[data.Second.X, data.Second.Y]);
+                break;
+            case InventoryTypes.Craft:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, game.Player.Inventory.CraftZone[data.Second.X, data.Second.Y]);
+                break;
+            case InventoryTypes.Result:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, game.Player.Inventory.CraftResult[data.Second.X, data.Second.Y]);
+                break;
+        }
     }
 }

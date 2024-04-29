@@ -9,28 +9,47 @@ namespace PixelRPG
     public class Inventory
     {
         public WorldElement[,] InventorySlots {  get; private set; }
-        private Queue<(int X, int Y)> selectedSlots = new Queue<(int X, int Y)>();
+        public Queue<(int X, int Y,InventoryTypes Type)> SelectedSlots {  get; private set; }
         public Inventory()
         {
+            SelectedSlots = new Queue<(int X, int Y, InventoryTypes Type)>();
             InventorySlots = new WorldElement[8, 8];
-            for (int i = 0; i < 8; i++)
-                for (int j = 0; j < 8; j++)
-                    InventorySlots[i, j] = new WorldElement("Empty", true, false, int.MaxValue);
+            SetEmptyArray(InventorySlots);
+        }
+        public void SetEmptyArray(WorldElement[,] array)
+        {
+            for (int i = 0; i < array.GetLength(0); i++)
+                for (int j = 0; j < array.GetLength(1); j++)
+                    array[i, j] = new WorldElement("Empty", false, int.MaxValue,true);
         }
 
-        public void ClearSlots()=> selectedSlots.Clear();
+        public WorldElement[,] CopyArray(WorldElement[,] array)
+        {
+            var newArray = new WorldElement[array.GetLength(0),array.GetLength(1)];
+            for (int i = 0;i < newArray.GetLength(0);i++)
+                for (int j = 0;j < newArray.GetLength(1);j++)
+                    newArray[i,j] = array[i,j];
+            return newArray;
+        }
+
+        public virtual InventoryTypes[,] GetRightSide()
+        {
+            return new InventoryTypes[1, InventorySlots.GetLength(1)];
+        }
+
+        public void ClearSlots()=> SelectedSlots.Clear();
 
         public bool SetItemInFirstSlot()
         {
             if (InventorySlots[0, 0].Name != "Empty") return false;
             var result = false;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < InventorySlots.GetLength(0); i++)
             {
-                for (int j = 0; j < 8; j++)
+                for (int j = 0; j < InventorySlots.GetLength(1); j++)
                     if (InventorySlots[i, j].Name != "Empty")
                     {
                         InventorySlots[0,0] = InventorySlots[i,j];
-                        InventorySlots[i, j] = new WorldElement("Empty",true,false,int.MaxValue);
+                        InventorySlots[i, j] = new WorldElement("Empty",false,int.MaxValue,true);
                         result = true;
                         break;
                     }
@@ -40,29 +59,32 @@ namespace PixelRPG
             return result;
         }
 
-        public (bool IsComplete, (int X, int Y) First, (int X, int Y) Second) ChangeSelectedSlots()
+        public virtual (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) ChangeSelectedSlots()
         {
-            if (selectedSlots.Count == 2)
+            if (SelectedSlots.Count == 2)
             {
-                var first = selectedSlots.Dequeue();
-                var second = selectedSlots.Dequeue();
-                var memory = InventorySlots[first.X, first.Y];
-                InventorySlots[first.X, first.Y] = InventorySlots[second.X, second.Y];
-                InventorySlots[second.X,second.Y] = memory;
-                return (true,first,second);
+                var first = SelectedSlots.Dequeue();
+                var second = SelectedSlots.Dequeue();
+                if (first.Type == InventoryTypes.Main && second.Type == InventoryTypes.Main)
+                {
+                    var memory = InventorySlots[first.X, first.Y];
+                    InventorySlots[first.X, first.Y] = InventorySlots[second.X, second.Y];
+                    InventorySlots[second.X, second.Y] = memory;
+                    return (true, first, second);
+                }
             }
-            return (false,(-1,-1),(-1,-1));
+            return (false,(-1,-1,InventoryTypes.Main),(-1,-1, InventoryTypes.Main));
         }
 
-        public bool AddSlot(int x, int y)
+        public bool AddSlot(int x, int y,InventoryTypes type)
         {
-            if (selectedSlots.Count < 2)
+            if (SelectedSlots.Count < 2)
             {
-                selectedSlots.Enqueue((x, y));
+                SelectedSlots.Enqueue((x, y,type));
                 return true;
             }
-            selectedSlots.Dequeue();
-            selectedSlots.Enqueue((x, y));
+            SelectedSlots.Dequeue();
+            SelectedSlots.Enqueue((x, y,type));
             return false;
             
         }

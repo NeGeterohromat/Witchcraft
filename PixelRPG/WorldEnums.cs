@@ -18,4 +18,11 @@ namespace PixelRPG
         Up,
         Down
     }
+    public enum InventoryTypes
+    {
+        None,
+        Main,
+        Craft,
+        Result
+    }
 }

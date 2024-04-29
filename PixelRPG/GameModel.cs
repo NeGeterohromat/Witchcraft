@@ -6,14 +6,29 @@ namespace PixelRPG
 	{
 		public Player Player { get; private set; }
 		public WorldElement[,] World { get; private set; }
-		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, false, int.MaxValue);
+		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, int.MaxValue);
+		private const double emptyCount = 3d / 4;
 		public readonly List<WorldElement> WorldElementsList = new List<WorldElement>()
 		{
-			new WorldElement("Empty",true,false,int.MaxValue),
-			new WorldElement("Grass",true,false,0,new WorldElement("Turf",true,true,int.MaxValue)),
-			new WorldElement("Tree",false,false,0,new WorldElement("Wood",true,true,int.MaxValue)),
-			new WorldElement("Stone",true,true,int.MaxValue),
-			new WorldElement("Bush",false,false,0,new WorldElement("Stick",true,true,int.MaxValue))
+			new WorldElement("Empty",false,int.MaxValue,true),
+			new WorldElement("Grass",false,0,true,0,new WorldElement("Turf",true,int.MaxValue)),
+			new WorldElement("Tree",false,1,false,0,new WorldElement("Wood",true,int.MaxValue)),
+			new WorldElement("Stone",true,int.MaxValue),
+			new WorldElement("Bush",false,0,false,0,new WorldElement("Stick",true,int.MaxValue))
+		};
+		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2 = new Dictionary<Craft, WorldElement[,]>()
+		{
+			{
+				new Craft( new WorldElement[2,2]
+				{
+					{ new WorldElement("Stone",true,int.MaxValue), new WorldElement("Empty",false,int.MaxValue,true) },
+					{ new WorldElement("Stick",true,int.MaxValue), new WorldElement("Empty",false,int.MaxValue,true) }
+				}),
+				new WorldElement[1,2]
+				{
+					{ new WorldElement("StoneChopper",true,int.MaxValue,true,1), new WorldElement("Empty",false,int.MaxValue,true)}
+				}
+			}
 		};
 		public GameModel(int worldSize)
 		{
@@ -27,7 +42,13 @@ namespace PixelRPG
 			var world = new WorldElement[worldSize, worldSize];
 			for (int i = 0; i < worldSize; i++)
 				for (int j = 0; j < worldSize; j++)
-					world[i, j] = WorldElementsList[random.Next(WorldElementsList.Count)];
+				{
+					var number = random.NextDouble();
+					if (number > emptyCount)
+						world[i, j] = WorldElementsList[random.Next(WorldElementsList.Count)];
+					else
+						world[i, j] = WorldElementsList[0];
+                }
 			return world;
 		}
 
