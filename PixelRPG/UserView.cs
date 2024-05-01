@@ -13,7 +13,7 @@ namespace PixelRPG
         private Menu menu;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
-        private PictureBox currentInventorySlot;
+        private PictureBox ArmSlot;
         private PictureBox firstSelectedSlotInInventory;
         private PictureBox secondSelectedSlotInInventory;
         private List<PictureBox> craftImages = new List<PictureBox>();
@@ -38,16 +38,64 @@ namespace PixelRPG
             controls = new GameControls(game, visual);
             var keyBar = new TextBox() { Size = new Size(0,0)};
             controls.SetKeyCommands(keyBar);
-            controls.OpenInventory += () => ViewInventory(game.Player.Inventory);
-            controls.CloseInventory += () => CloseInventory();
-            controls.OpenMenu += () => OpenMenu();
-            controls.ChangeCraftImages += (inv) => ChangeCraftsImages(inv);
             var tableView = visual.GetWorldVisual(game.Player.Position);
             var table = SetImages(SetGameTable(), tableView);
             gameView = table;
-            visual.ChangeOneCellView += (row, column, worldCell, player) =>
+            SetAllVisualDelegates(table);
+            AddAllPlayerData();
+            Controls.Add(table);
+            Controls.Add(keyBar);
+            keyBar.Focus();
+            keyBar.Select();
+        }
+
+        public void AddAllPlayerData()
+        {
+            SetArmSlot();
+            Controls.Add(ArmSlot);
+        }
+
+        public void SetArmSlot()
+        {
+            var currentSlot = new PictureBox()
             {
-                var image = player == null ? Image.FromFile(game.FileName(worldCell)) : Image.FromFile(game.FileName(player));
+                BackColor = Color.Gray,
+                Image = Image.FromFile(game.FileName(game.Player.Inventory.InventorySlots[0, 0])),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)))
+            };
+            currentSlot.Paint += (sender, e) =>
+            {
+                var penWidth = currentSlot.Width / 20;
+                e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, currentSlot.Width - 2, currentSlot.Height - 2);
+            };
+            ArmSlot = currentSlot;
+            SizeChanged += (sender, e) =>
+            {
+                ArmSlot.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                ArmSlot.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)));
+            };
+        }
+
+        public void SetAllVisualDelegates(TableLayoutPanel table)
+        {
+            visual.OpenInventoryView += () => ViewInventory(game.Player.Inventory);
+            visual.CloseInventoryView += () => CloseInventory();
+            visual.OpenMenuView += () => OpenMenu();
+            visual.ChangeCraftImagesView += (inv) => ChangeCraftsImages(inv);
+            visual.ChangeOneCellView += (row, column, worldCell, player,mob) =>
+            {
+                Image image;
+                if (player == null)
+                {
+                    if (mob == null)
+                        image = Image.FromFile(game.FileName(worldCell));
+                    else
+                        image = Image.FromFile(game.FileName(mob));
+                }
+                else
+                    image = Image.FromFile(game.FileName(player));
                 var pict = (PictureBox)table.GetControlFromPosition(row, column);
                 pict.Image = image;
                 pict.SizeMode = PictureBoxSizeMode.Zoom;
@@ -67,32 +115,8 @@ namespace PixelRPG
             };
             visual.ChangeCurrentInventorySlotView += (el) =>
             {
-                currentInventorySlot.Image = Image.FromFile(game.FileName(el));
+                ArmSlot.Image = Image.FromFile(game.FileName(el));
             };
-            var currentSlot = new PictureBox()
-            {
-                BackColor = Color.Gray,
-                Image = Image.FromFile(game.FileName(game.Player.Inventory.InventorySlots[0, 0])),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Size = new Size((int)(ClientSize.Width*0.01*CurrentSlotPercentSize),(int)(ClientSize.Height*0.01*CurrentSlotPercentSize)),
-                Location = new Point((int)(ClientSize.Width*0.01*(100-CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)))
-            };
-            currentSlot.Paint += (sender, e) =>
-            {
-                var penWidth = currentSlot.Width / 20;
-                e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, currentSlot.Width - 2, currentSlot.Height - 2);
-            };
-            currentInventorySlot = currentSlot;
-            SizeChanged += (sender, e) =>
-            {
-                currentInventorySlot.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
-                currentInventorySlot.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)));
-            };
-            Controls.Add(currentSlot);
-            Controls.Add(table);
-            Controls.Add(keyBar);
-            keyBar.Focus();
-            keyBar.Select();
         }
 
         public TableLayoutPanel SetGameTable()
@@ -106,12 +130,16 @@ namespace PixelRPG
             return table;
         }
 
-        public TableLayoutPanel SetImages(TableLayoutPanel table, WorldElement[,] tableView)
+        public TableLayoutPanel SetImages(TableLayoutPanel table, (WorldElement[,] Elements, Dictionary<Point, Mob> Mobs) tableView)
         {
             for (int i = 0; i < GameVisual.ViewFieldSize; i++)
                 for (int j = 0; j < GameVisual.ViewFieldSize; j++)
                 {
-                    var image = Image.FromFile(game.FileName(tableView[i, j]));
+                    Image image;
+                    if (tableView.Mobs.ContainsKey(new Point(i, j)))
+                        image = Image.FromFile(game.FileName(tableView.Mobs[new Point(i,j)]));
+                    else
+                        image = Image.FromFile(game.FileName(tableView.Elements[i, j]));
                     var p = new PictureBox() { Dock = DockStyle.Fill, Image = image };
                     p.SizeMode = PictureBoxSizeMode.Zoom;
                     table.Controls.Add(p, i, j);
@@ -246,7 +274,7 @@ namespace PixelRPG
             var table = SetInventoryTable(inventory);
             SetImagesInInventory(table, inventory);
             Controls.Remove(gameView);
-            Controls.Remove(currentInventorySlot);
+            Controls.Remove(ArmSlot);
             Controls.Add(table);
             lastInventoryView = table;
         }
@@ -258,7 +286,7 @@ namespace PixelRPG
             secondSelectedSlotInInventory = null;
             game.Player.Inventory.ClearSlots();
             Controls.Remove(lastInventoryView);
-            Controls.Add(currentInventorySlot);
+            Controls.Add(ArmSlot);
             Controls.Add(gameView);
         }
 

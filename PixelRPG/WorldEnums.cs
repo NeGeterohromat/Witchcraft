@@ -25,4 +25,9 @@ namespace PixelRPG
         Craft,
         Result
     }
+    public enum MobActionType
+    {
+        Peaceful,
+        Enemy
+    }
 }
