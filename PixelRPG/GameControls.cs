@@ -6,6 +6,7 @@ public class GameControls
 {
     private GameModel game;
     private GameVisual visual;
+    public readonly System.Windows.Forms.Timer peacefulMobMoveTimer;
     private static Dictionary<char, Sides> turns = new Dictionary<char, Sides>()
     {
         { 'A',Sides.Left },
@@ -25,7 +26,42 @@ public class GameControls
 	{
         this.game = game;
         this.visual = visual;
+        peacefulMobMoveTimer = GetPeacefulMobMoveTimer();
 	}
+
+    public System.Windows.Forms.Timer GetPeacefulMobMoveTimer()
+    {
+        var timer = new System.Windows.Forms.Timer();
+        timer.Interval = GameModel.peacefulMobMoveTick;
+        timer.Tick += (sender, e) =>
+        {
+            foreach (var entity in visual.CurrentViewedMobs.Where(en=>en.Value.Action == EntityActionType.Peaceful))
+                RandomEntityMove(entity.Value);
+            visual.GetWorldVisual(game.Player.Position);
+        };
+        return timer;
+    }
+
+    private void RandomEntityMove(Entity entity)
+    {
+        var random = new Random();
+        if (random.NextDouble() < GameModel.peacefulMobMoveChance)
+        {
+            if (random.NextDouble() > 1d / 2)
+                entity.SetDirection((Sides)random.Next(0, 4));
+            else
+            {
+                var point = moves[entity.Direction];
+                var newPosition = new Point(entity.Position.X + point.X, entity.Position.Y + point.Y);
+                if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
+                {
+                    game.Mobs.Remove(entity.Position);
+                    entity.SetPosition(newPosition);
+                    game.Mobs[entity.Position] = entity;
+                }
+            }
+        }
+    }
 
     public void Move(Point newPosition)=>
         visual.GetWorldVisual(newPosition);
@@ -46,19 +82,20 @@ public class GameControls
     public void ChangeInventoryVisualSwitchSecondType(WorldElement[,] first, InventoryTypes second, 
         (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data)
     {
+        var armCraft = game.Player.Inventory as ArmCraft;
         switch(second)
         {
             case InventoryTypes.Main:
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
-                visual.ChangeInventoryCell(2, game.Player.Inventory.InventorySlots[data.Second.X, data.Second.Y]);
+                visual.ChangeInventoryCell(2, armCraft.InventorySlots[data.Second.X, data.Second.Y]);
                 break;
             case InventoryTypes.Craft:
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
-                visual.ChangeInventoryCell(2, game.Player.Inventory.CraftZone[data.Second.X, data.Second.Y]);
+                visual.ChangeInventoryCell(2, armCraft.CraftZone[data.Second.X, data.Second.Y]);
                 break;
             case InventoryTypes.Result:
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
-                visual.ChangeInventoryCell(2, game.Player.Inventory.CraftResult[data.Second.X, data.Second.Y]);
+                visual.ChangeInventoryCell(2, armCraft.CraftResult[data.Second.X, data.Second.Y]);
                 break;
         }
     }
@@ -82,12 +119,14 @@ public class GameControls
         if (newView != game.Player.Direction)
         {
             game.SetPlayerView(newView);
-            visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, null, new Player(game.Player.Type, game.Player.Position, newView));
+            visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, null, game.Player);
         }
         else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
         {
-            Move(newPosition);
+            game.Mobs.Remove(game.Player.Position);
             game.SetPlayerPosition(newPosition);
+            game.Mobs[game.Player.Position] = game.Player;
+            Move(newPosition);
             if (game.PickItem(newPosition))
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
         }
@@ -129,17 +168,18 @@ public class GameControls
         if (controlChar == (char)Keys.J)
         {
             var data = game.Player.Inventory.ChangeSelectedSlots();
+            var armCraft = game.Player.Inventory as ArmCraft;
             if (data.IsComplete)
                 switch (data.First.Type)
                 {
                     case InventoryTypes.Main:
-                        ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.InventorySlots, data.Second.Type, data);
+                        ChangeInventoryVisualSwitchSecondType(armCraft.InventorySlots, data.Second.Type, data);
                         break;
                     case InventoryTypes.Craft:
-                        ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.CraftZone, data.Second.Type, data);
+                        ChangeInventoryVisualSwitchSecondType(armCraft.CraftZone, data.Second.Type, data);
                         break;
                     case InventoryTypes.Result:
-                        ChangeInventoryVisualSwitchSecondType(game.Player.Inventory.CraftResult, data.Second.Type, data);
+                        ChangeInventoryVisualSwitchSecondType(armCraft.CraftResult, data.Second.Type, data);
                         break;
                 }
             visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
@@ -151,7 +191,8 @@ public class GameControls
         }
         if (controlChar == (char)Keys.C)
         {
-            if (IsInventoryOpen && game.Player.Inventory.Craft(game.Crafts2by2))
+            var armCraft = game.Player.Inventory as ArmCraft;
+            if (IsInventoryOpen && armCraft.Craft(game.Crafts2by2))
             {
                 visual.ChangeCraftImages(game.Player.Inventory);
             }

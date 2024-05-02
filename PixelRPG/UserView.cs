@@ -47,6 +47,7 @@ namespace PixelRPG
             Controls.Add(keyBar);
             keyBar.Focus();
             keyBar.Select();
+            controls.peacefulMobMoveTimer.Start();
         }
 
         public void AddAllPlayerData()
@@ -84,18 +85,9 @@ namespace PixelRPG
             visual.CloseInventoryView += () => CloseInventory();
             visual.OpenMenuView += () => OpenMenu();
             visual.ChangeCraftImagesView += (inv) => ChangeCraftsImages(inv);
-            visual.ChangeOneCellView += (row, column, worldCell, player,mob) =>
+            visual.ChangeOneCellView += (row, column, worldCell,mob) =>
             {
-                Image image;
-                if (player == null)
-                {
-                    if (mob == null)
-                        image = Image.FromFile(game.FileName(worldCell));
-                    else
-                        image = Image.FromFile(game.FileName(mob));
-                }
-                else
-                    image = Image.FromFile(game.FileName(player));
+                var image = mob == null? Image.FromFile(game.FileName(worldCell)) : Image.FromFile(game.FileName(mob));
                 var pict = (PictureBox)table.GetControlFromPosition(row, column);
                 pict.Image = image;
                 pict.SizeMode = PictureBoxSizeMode.Zoom;
@@ -130,7 +122,7 @@ namespace PixelRPG
             return table;
         }
 
-        public TableLayoutPanel SetImages(TableLayoutPanel table, (WorldElement[,] Elements, Dictionary<Point, Mob> Mobs) tableView)
+        public TableLayoutPanel SetImages(TableLayoutPanel table, (WorldElement[,] Elements, Dictionary<Point, Entity> Mobs) tableView)
         {
             for (int i = 0; i < GameVisual.ViewFieldSize; i++)
                 for (int j = 0; j < GameVisual.ViewFieldSize; j++)

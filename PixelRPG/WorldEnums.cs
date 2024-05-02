@@ -6,11 +6,6 @@ using System.Threading.Tasks;
 
 namespace PixelRPG
 {
-    public enum Characters
-    {
-        Base,
-        Cool
-    }
     public enum Sides
     {
         Left,
@@ -25,8 +20,9 @@ namespace PixelRPG
         Craft,
         Result
     }
-    public enum MobActionType
+    public enum EntityActionType
     {
+        Player,
         Peaceful,
         Enemy
     }

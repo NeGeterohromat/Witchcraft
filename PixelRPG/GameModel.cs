@@ -4,18 +4,21 @@ namespace PixelRPG
 {
 	public class GameModel
 	{
-		public Player Player { get; private set; }
+		public Entity Player { get; private set; }
 		public WorldElement[,] World { get; private set; }
-		public Dictionary<Point,Mob> Mobs { get; private set; }
+		public Dictionary<Point,Entity> Mobs { get; private set; }
 		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, int.MaxValue);
 		private const double emptyPercent = 3d / 4;
 		private const int MobCount = 25;
-		public readonly List<WorldElement> NatureWorldElementsList;
+        public const double peacefulMobMoveChance = 1d / 10;
+        public const int peacefulMobMoveTick = 1*1000;
+        public readonly List<WorldElement> NatureWorldElementsList;
 		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2;
-		public readonly List<Mob> NatureMobsPrototypes;
-		public readonly Dictionary<string, Mob> AllMobsPrototypes = new Dictionary<string, Mob>()
+		public readonly List<Entity> NatureMobsPrototypes;
+		public readonly Dictionary<string, Entity> AllMobsPrototypes = new Dictionary<string, Entity>()
 		{
-			{"Chicken",new Mob("Chicken",MobActionType.Peaceful,20,new Point(-1,-1)) }
+			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,new ArmCraft()) },
+			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,new Inventory()) }
 		};
 		public readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
 		{
@@ -34,25 +37,25 @@ namespace PixelRPG
 		{
             Crafts2by2 = GetCrafts();
             NatureWorldElementsList = GetNatureWorldElementList();
-            Player = new Player(Characters.Base,new Point(7,13),Sides.Down);
+			Player = AllMobsPrototypes["Player"];
 			World = CreateWorld(worldSize);
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
 		}
 
-		public List<Mob> GetNatureMobs()
+		public List<Entity> GetNatureMobs()
 		{
-			return new List<Mob>()
+			return new List<Entity>()
 			{
 				AllMobsPrototypes["Chicken"]
 			};
 		}
 
-		public Dictionary<Point, Mob> GetWorldMobs()
+		public Dictionary<Point, Entity> GetWorldMobs()
 		{
 			var spavnedMobsCount = 0;
 			var random = new Random();
-			var mobs = new Dictionary<Point, Mob>();
+			var mobs = new Dictionary<Point, Entity>() { {Player.Position, Player } };
 			do
 			{
 				var x = random.Next(0,World.GetLength(0));
@@ -60,7 +63,7 @@ namespace PixelRPG
 				if (World[x,y].Name=="Empty")
 				{
 					var mobPrototype = NatureMobsPrototypes[random.Next(0, NatureMobsPrototypes.Count)];
-					mobs[new Point(x,y)]=new Mob(mobPrototype.Name,mobPrototype.Action,mobPrototype.Health,new Point(x,y));
+					mobs[new Point(x,y)]=new Entity(mobPrototype.Name,mobPrototype.Action,mobPrototype.Health,new Point(x,y),Sides.Down,new Inventory());
 					spavnedMobsCount++;
 				}
 			} while (spavnedMobsCount < MobCount);
@@ -139,13 +142,11 @@ namespace PixelRPG
 			point.X >= 0 && point.X < World.GetLength(0) && point.Y >= 0 && point.Y < World.GetLength(1);
 
 		public bool IsStepablePoint(Point point) =>
-			World[point.X, point.Y].CanPlayerMoveIn;
+			World[point.X, point.Y].CanPlayerMoveIn && !Mobs.ContainsKey(point);
 
         public string FileName(WorldElement cell)  => @"images\world\"+cell.Name+".png";
 
-        public string FileName(Mob mob) => @"images\mobs\" + mob.Name + ".png";
-
-        public string FileName(Player player) => @"images\characters\"+player.Type.ToString()+player.Direction.ToString()+".png";  
+        public string FileName(Entity entity) => @"images\entities\"+entity.Name.ToString()+entity.Direction.ToString()+".png";  
         
     }
 }
