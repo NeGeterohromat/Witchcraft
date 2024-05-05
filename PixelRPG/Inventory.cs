@@ -8,7 +8,7 @@ namespace PixelRPG
 {
     public class Inventory
     {
-        public WorldElement[,] InventorySlots {  get; private set; }
+        public WorldElement[,] InventorySlots {  get; set; }
         public Queue<(int X, int Y,InventoryTypes Type)> SelectedSlots {  get; private set; }
         public Inventory()
         {
@@ -16,7 +16,7 @@ namespace PixelRPG
             InventorySlots = new WorldElement[8, 8];
             SetEmptyArray(InventorySlots);
         }
-        public void SetEmptyArray(WorldElement[,] array)
+        public static void SetEmptyArray(WorldElement[,] array)
         {
             for (int i = 0; i < array.GetLength(0); i++)
                 for (int j = 0; j < array.GetLength(1); j++)

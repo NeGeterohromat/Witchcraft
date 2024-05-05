@@ -81,31 +81,33 @@ namespace PixelRPG
 
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
-            visual.AddImageInFirstLayWithPercentSize += (i, j, im) =>
+            visual.AddImageInFirstLay += (i, j, im) =>
             {
                 var per = 70;
                 var p = (PictureBox)table.GetControlFromPosition(i, j);
                 var bmpUnder = (Bitmap)p.Image;
                 var bmpOn = (Bitmap)im;
                 var g = Graphics.FromImage(bmpUnder);
-                g.DrawImage(bmpOn, 
-                    (bmpUnder.Size.Width - bmpUnder.Size.Width * per / 100) / 2, 
-                    (bmpUnder.Size.Height - bmpUnder.Size.Height * per / 100) / 2, 
-                    bmpUnder.Size.Width * per / 100, 
+                g.DrawImage(bmpOn,
+                    (bmpUnder.Size.Width - bmpUnder.Size.Width * per / 100) / 2,
+                    (bmpUnder.Size.Height - bmpUnder.Size.Height * per / 100) / 2,
+                    bmpUnder.Size.Width * per / 100,
                     bmpUnder.Size.Height * per / 100);
                 g.Dispose();
                 p.Image = bmpUnder;
             };
-            visual.OpenInventoryView += () => ViewInventory(game.Player.Inventory);
+            visual.OpenInventoryView += (Inventory inv) => ViewInventory(inv);
             visual.CloseInventoryView += () => CloseInventory();
             visual.OpenMenuView += () => OpenMenu();
             visual.ChangeCraftImagesView += (inv) => ChangeCraftsImages(inv);
-            visual.ChangeOneCellView += (row, column, worldCell,mob) =>
+            visual.ChangeOneCellView += (row, column, image) =>
             {
-                var image = mob == null? Image.FromFile(game.FileName(worldCell)) : Image.FromFile(game.FileName(mob));
-                var pict = (PictureBox)table.GetControlFromPosition(row, column);
-                pict.Image = image;
-                pict.SizeMode = PictureBoxSizeMode.Zoom;
+                lock (image)
+                {
+                    var pict = (PictureBox)table.GetControlFromPosition(row, column);
+                    pict.Image = image;
+                    pict.SizeMode = PictureBoxSizeMode.Zoom;
+                }
             };
             visual.ChangeInventoryCellView += (number, cell) =>
             {
@@ -165,15 +167,18 @@ namespace PixelRPG
                 table.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / inventory.InventorySlots.GetLength(0)));
             }
             var rightSide = inventory.GetRightSide();
-            var currentInventory = inventory as ArmCraft;
-            if (currentInventory != null)
-                rightSide = currentInventory.GetRightSide();
+            var currentPlayerInventory = inventory as ArmCraft;
+            var currentChestInventory = inventory as Chest;
+            if (currentPlayerInventory != null)
+                rightSide = currentPlayerInventory.GetRightSide();
+            if(currentChestInventory != null)
+                rightSide = currentChestInventory.GetRightSide();
             for (int j = 0; j < rightSide.GetLength(0); j++)
                 table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 2 / rightSide.GetLength(0)));
             return table;
         }
 
-        public PictureBox GetInventoryImage(Image image,int row, int column,InventoryTypes type)
+        public PictureBox GetInventoryImage(Image image,int row, int column,InventoryTypes type,Inventory inventory)
         {
             var p = new PictureBox() { BackColor = Color.White, Image = image, Dock = DockStyle.Fill };
             p.SizeMode = PictureBoxSizeMode.Zoom;
@@ -187,7 +192,7 @@ namespace PixelRPG
             {
                 p.Tag = Color.Green;
                 p.Refresh();
-                if (game.Player.Inventory.AddSlot(row, column, type))
+                if (inventory.AddSlot(row, column, type))
                 {
                     if (firstSelectedSlotInInventory == null)
                         firstSelectedSlotInInventory = p;
@@ -211,13 +216,16 @@ namespace PixelRPG
                 for (int j = 0; j < inventory.InventorySlots.GetLength(1); j++)
                 {
                     var image = Image.FromFile(game.FileName(inventory.InventorySlots[i, j]));
-                    var p = GetInventoryImage(image, i, j,InventoryTypes.Main);
+                    var p = GetInventoryImage(image, i, j,InventoryTypes.Main,inventory);
                     table.Controls.Add(p, j, i);
                 }
             var rightSide = inventory.GetRightSide();
-            var currentInventory = inventory as ArmCraft;
-            if (currentInventory != null)
-                rightSide = currentInventory.GetRightSide();
+            var currentPlayerInventory = inventory as ArmCraft;
+            var currentChestInventory = inventory as Chest;
+            if (currentPlayerInventory != null)
+                rightSide = currentPlayerInventory.GetRightSide();
+            if (currentChestInventory != null)
+                rightSide = currentChestInventory.GetRightSide();
             for (int j = 0; j< rightSide.GetLength(1); j++)
                 for (int i = 0;i < rightSide.GetLength(0);i++)
                 {
@@ -228,14 +236,19 @@ namespace PixelRPG
                             p.BackColor = Color.Transparent;
                             break;
                         case InventoryTypes.Craft:
-                            var image = Image.FromFile(game.FileName(currentInventory.CraftZone[j-1, i-1]));
-                            p = GetInventoryImage(image, j - 1, i - 1, InventoryTypes.Craft);
+                            var image = Image.FromFile(game.FileName(currentPlayerInventory.CraftZone[j-1, i-1]));
+                            p = GetInventoryImage(image, j - 1, i - 1, InventoryTypes.Craft,inventory);
                             craftImages.Add(p);
                             break;
                         case InventoryTypes.Result:
-                            image = Image.FromFile(game.FileName(currentInventory
-                                .CraftResult[j - 1 - currentInventory.CraftZone.GetLength(1) - 1,i-1]));
-                            p = GetInventoryImage(image, j - 1 - currentInventory.CraftZone.GetLength(1) - 1, i - 1, InventoryTypes.Result);
+                            image = Image.FromFile(game.FileName(currentPlayerInventory
+                                .CraftResult[j - 1 - currentPlayerInventory.CraftZone.GetLength(1) - 1,i-1]));
+                            p = GetInventoryImage(image, j - 1 - currentPlayerInventory.CraftZone.GetLength(1) - 1, i - 1, InventoryTypes.Result, inventory);
+                            craftImages.Add(p);
+                            break;
+                        case InventoryTypes.Chest:
+                            image = Image.FromFile(game.FileName(currentChestInventory.ChestInventory.InventorySlots[i - 1, j]));
+                            p = GetInventoryImage(image,j,i-1,InventoryTypes.Chest, inventory);
                             craftImages.Add(p);
                             break;
                     }

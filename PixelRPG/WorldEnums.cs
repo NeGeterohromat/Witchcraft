@@ -18,7 +18,8 @@ namespace PixelRPG
         None,
         Main,
         Craft,
-        Result
+        Result,
+        Chest
     }
     public enum EntityActionType
     {

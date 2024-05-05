@@ -7,7 +7,8 @@ namespace PixelRPG
 		public Entity Player { get; private set; }
 		public WorldElement[,] World { get; private set; }
 		public Dictionary<Point,Entity> Mobs { get; private set; }
-		public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, int.MaxValue);
+        public Dictionary<Point, Chest> Chests { get; private set; }
+        public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, int.MaxValue);
 		private const double emptyPercent = 3d / 4;
 		private const int MobCount = 25;
         public const double peacefulMobMoveChance = 1d / 10;
@@ -32,7 +33,7 @@ namespace PixelRPG
 			{"Bush",new WorldElement("Bush",false,0,false,false,0,0,new WorldElement("Stick",true,int.MaxValue)) },
 			{"Stick", new WorldElement("Stick",true,int.MaxValue)},
 			{"StoneChopper",new WorldElement("StoneChopper",true,int.MaxValue,true,false,1,5) },
-			{"Heap",new WorldElement("Heap",false,int.MaxValue,true,true) }
+			{"Heap",new WorldElement("Heap",false,int.MaxValue,false,true) }
         };
 		public GameModel(int worldSize)
 		{
@@ -42,6 +43,7 @@ namespace PixelRPG
 			World = CreateWorld(worldSize);
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
+			Chests = new Dictionary<Point, Chest>();
 		}
 
 		public void MoveEntity(Entity entity, Point point)
@@ -49,6 +51,8 @@ namespace PixelRPG
 			Mobs.Remove(entity.Position);
 			entity.SetPosition(point);
 			Mobs[point]=entity;
+			if (!entity.Equals(Player))
+				PickItem(entity.Inventory, point);
 		}
 
 		public List<Entity> GetNatureMobs()
@@ -126,11 +130,11 @@ namespace PixelRPG
 			return world;
 		}
 
-		public bool PickItem(Point itemPosition)
+		public bool PickItem(Inventory inventory,Point itemPosition)
 		{
 			var result = false;
 			if (InBounds(itemPosition) && World[itemPosition.X,itemPosition.Y].IsItem)
-				if (Player.Inventory.AddInFirstEmptySlot(World[itemPosition.X, itemPosition.Y]))
+				if (inventory.AddInFirstEmptySlot(World[itemPosition.X, itemPosition.Y]))
 				{
 					World[itemPosition.X, itemPosition.Y] = NatureWorldElementsList[0];
 					result = true;

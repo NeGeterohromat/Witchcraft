@@ -79,7 +79,8 @@ public class GameControls
         (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data)
     {
         var armCraft = game.Player.Inventory as ArmCraft;
-        switch(second)
+        var chest = game.Chests[new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y)];
+        switch (second)
         {
             case InventoryTypes.Main:
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
@@ -92,6 +93,10 @@ public class GameControls
             case InventoryTypes.Result:
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
                 visual.ChangeInventoryCell(2, armCraft.CraftResult[data.Second.X, data.Second.Y]);
+                break;
+            case InventoryTypes.Chest:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, chest.ChestInventory.InventorySlots[data.Second.X, data.Second.Y]);
                 break;
         }
     }
@@ -115,13 +120,13 @@ public class GameControls
         if (newView != game.Player.Direction)
         {
             game.SetPlayerView(newView);
-            visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, null, game.Player);
+            visual.ChangeOneCell(GameVisual.ViewFieldSize / 2, GameVisual.ViewFieldSize / 2, game.Player);
         }
         else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
         {
             game.MoveEntity(game.Player,newPosition);
             Move(newPosition);
-            if (game.PickItem(newPosition))
+            if (game.PickItem(game.Player.Inventory,newPosition))
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
         }
     }
@@ -143,7 +148,12 @@ public class GameControls
                 entity.DamageEntity(game.Player.Inventory.InventorySlots[0, 0].Damage);
                 visual.ViewDamageEffect(entity.Position);
                 if (entity.Health == 0)
+                {
                     game.Mobs.Remove(frontPoint);
+                    game.Chests[frontPoint] = new Chest(entity.Inventory,game.Player.Inventory);
+                    game.World[entity.Position.X, entity.Position.Y] = game.AllWorldElements["Heap"];
+                    visual.ChangeOneCellByWorldCoords(entity.Position.X, entity.Position.Y, game.World[entity.Position.X, entity.Position.Y]);
+                }
             }
         }
         if (controlChar == (char)Keys.P)
@@ -155,26 +165,38 @@ public class GameControls
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
+            else if (!IsInventoryOpen && game.Chests.ContainsKey(frontPoint))
+            {
+                visual.OpenInventory(game.Chests[frontPoint]);
+                IsInventoryOpen = true;
+            }
         }
     }
 
     private void ChangeInventoryIfChar(char controlChar)
     {
+        var frontPoint = new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y);
         if (controlChar == (char)Keys.I)
             if (IsInventoryOpen)
             {
                 visual.CloseInventory();
                 IsInventoryOpen = false;
+                if (game.Chests.ContainsKey(frontPoint) && game.Chests[frontPoint].IsEmpty())
+                {
+                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Empty"];
+                    visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
+                }
             }
             else
             {
-                visual.OpenInventory();
+                visual.OpenInventory(game.Player.Inventory);
                 IsInventoryOpen = true;
             }
         if (controlChar == (char)Keys.J)
         {
-            var data = game.Player.Inventory.ChangeSelectedSlots();
             var armCraft = game.Player.Inventory as ArmCraft;
+            var chest = game.Chests[frontPoint];
+            var data = chest == null? armCraft.ChangeSelectedSlots():chest.ChangeSelectedSlots();
             if (data.IsComplete)
                 switch (data.First.Type)
                 {
@@ -186,6 +208,9 @@ public class GameControls
                         break;
                     case InventoryTypes.Result:
                         ChangeInventoryVisualSwitchSecondType(armCraft.CraftResult, data.Second.Type, data);
+                        break;
+                    case InventoryTypes.Chest:
+                        ChangeInventoryVisualSwitchSecondType(chest.ChestInventory.InventorySlots, data.Second.Type, data);
                         break;
                 }
             visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
