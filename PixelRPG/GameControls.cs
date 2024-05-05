@@ -54,11 +54,7 @@ public class GameControls
                 var point = moves[entity.Direction];
                 var newPosition = new Point(entity.Position.X + point.X, entity.Position.Y + point.Y);
                 if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
-                {
-                    game.Mobs.Remove(entity.Position);
-                    entity.SetPosition(newPosition);
-                    game.Mobs[entity.Position] = entity;
-                }
+                    game.MoveEntity(entity, newPosition);
             }
         }
     }
@@ -123,9 +119,7 @@ public class GameControls
         }
         else if (game.InBounds(newPosition) && game.IsStepablePoint(newPosition))
         {
-            game.Mobs.Remove(game.Player.Position);
-            game.SetPlayerPosition(newPosition);
-            game.Mobs[game.Player.Position] = game.Player;
+            game.MoveEntity(game.Player,newPosition);
             Move(newPosition);
             if (game.PickItem(newPosition))
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
@@ -137,19 +131,31 @@ public class GameControls
         var frontPoint = new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y);
         var frontElement = game.InBounds(frontPoint) ? game.World[frontPoint.X, frontPoint.Y] : game.OutOfBounds;
         if (controlChar == (char)Keys.L)
+        {
             if (frontElement.BreakLevel <= game.Player.Inventory.InventorySlots[0, 0].PowerToBreakOtherEl)
             {
                 game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, frontElement.Drop);
             }
+            else if (game.Mobs.ContainsKey(frontPoint))
+            {
+                var entity = game.Mobs[frontPoint];
+                entity.DamageEntity(game.Player.Inventory.InventorySlots[0, 0].Damage);
+                visual.ViewDamageEffect(entity.Position);
+                if (entity.Health == 0)
+                    game.Mobs.Remove(frontPoint);
+            }
+        }
         if (controlChar == (char)Keys.P)
-            if (frontElement.Name == "Empty" && game.Player.Inventory.InventorySlots[0, 0].Name != "Empty")
+        {
+            if (frontElement.Name == "Empty" && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Name != "Empty")
             {
                 game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
                 game.Player.Inventory.InventorySlots[0, 0] = game.NatureWorldElementsList[0];
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
+        }
     }
 
     private void ChangeInventoryIfChar(char controlChar)

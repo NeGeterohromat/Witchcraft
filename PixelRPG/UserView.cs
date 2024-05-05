@@ -81,6 +81,21 @@ namespace PixelRPG
 
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
+            visual.AddImageInFirstLayWithPercentSize += (i, j, im) =>
+            {
+                var per = 70;
+                var p = (PictureBox)table.GetControlFromPosition(i, j);
+                var bmpUnder = (Bitmap)p.Image;
+                var bmpOn = (Bitmap)im;
+                var g = Graphics.FromImage(bmpUnder);
+                g.DrawImage(bmpOn, 
+                    (bmpUnder.Size.Width - bmpUnder.Size.Width * per / 100) / 2, 
+                    (bmpUnder.Size.Height - bmpUnder.Size.Height * per / 100) / 2, 
+                    bmpUnder.Size.Width * per / 100, 
+                    bmpUnder.Size.Height * per / 100);
+                g.Dispose();
+                p.Image = bmpUnder;
+            };
             visual.OpenInventoryView += () => ViewInventory(game.Player.Inventory);
             visual.CloseInventoryView += () => CloseInventory();
             visual.OpenMenuView += () => OpenMenu();

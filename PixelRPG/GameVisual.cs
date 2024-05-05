@@ -22,8 +22,10 @@ namespace PixelRPG
         public event Action CloseInventoryView;
         public event Action OpenMenuView;
         public event Action<Inventory> ChangeCraftImagesView;
+		public event Action<int, int, Image> AddImageInFirstLayWithPercentSize;
 
-		public void OpenInventory() => OpenInventoryView();
+
+        public void OpenInventory() => OpenInventoryView();
         public void CloseInventory() => CloseInventoryView();
         public void OpenMenu() => OpenMenuView();
         public void ChangeCraftImages(Inventory inv) => ChangeCraftImagesView(inv);
@@ -34,6 +36,14 @@ namespace PixelRPG
 		public void ChangeCurrentInventorySlot(WorldElement el) =>
 			ChangeCurrentInventorySlotView(el);
 
+		public void ViewDamageEffect(Point worldPoint)
+		{
+            var viewRow = worldPoint.X - game.Player.Position.X + ViewFieldSize / 2;
+            var viewColumn = worldPoint.Y - game.Player.Position.Y + ViewFieldSize / 2;
+			if (viewRow >= 0 && viewRow < ViewFieldSize && viewColumn >= 0 && viewColumn < ViewFieldSize)
+				AddImageInFirstLayWithPercentSize(viewRow, viewColumn, Image.FromFile(@"images/icons/damage.png"));
+
+        }
 
         public void ChangeOneCellByWorldCoords(int row, int column, WorldElement cell = null, Entity mob = null)
 		{

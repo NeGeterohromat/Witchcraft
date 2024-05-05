@@ -14,9 +14,12 @@ namespace PixelRPG
         public readonly int BreakLevel;
         public readonly int PowerToBreakOtherEl;
         public readonly WorldElement Drop;
+        public readonly bool IsChest;
+        public readonly int Damage;
         private int? hash;
-        public WorldElement(string name, bool isItem, int breakLevel ,
-            bool? canPlayerMoveIn = null, int powerToBreakOtherEl = 0, WorldElement drop = null)
+        public WorldElement(string name, bool isItem, int breakLevel,
+            bool? canPlayerMoveIn = null, bool isChest = false, int powerToBreakOtherEl = 0,
+             int damage=1, WorldElement drop = null)
         {
             Name = name;
             CanPlayerMoveIn = (canPlayerMoveIn == null)? isItem:(bool)canPlayerMoveIn;
@@ -24,6 +27,8 @@ namespace PixelRPG
             BreakLevel = breakLevel;
             Drop = drop;
             PowerToBreakOtherEl = powerToBreakOtherEl;
+            IsChest = isChest;
+            Damage = damage;
         }
 
         public override bool Equals(object? obj)

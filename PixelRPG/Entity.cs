@@ -26,5 +26,13 @@ namespace PixelRPG
 
         public void SetPosition(Point newPosition) => Position = newPosition;
         public void SetDirection(Sides dir) => Direction = dir;
+        public void DamageEntity(int damage) 
+        {
+            var newHealth = Health - damage;
+            if (newHealth > 0)
+                Health = newHealth;
+            else
+                Health = 0;
+        }
     }
 }

@@ -24,14 +24,15 @@ namespace PixelRPG
 		{
 			{"OutOfBounds",new WorldElement("OutOfBounds", false, int.MaxValue) },
 			{"Empty",new WorldElement("Empty",false,int.MaxValue,true) },
-			{"Grass", new WorldElement("Grass",false,0,true,0,new WorldElement("Turf",true,int.MaxValue))},
+			{"Grass", new WorldElement("Grass",false,0,true,false,0,0,new WorldElement("Turf",true,int.MaxValue))},
 			{"Turf",new WorldElement("Turf",true,int.MaxValue) },
-			{"Tree",  new WorldElement("Tree",false,1,false,0,new WorldElement("Wood",true,int.MaxValue))},
+			{"Tree",  new WorldElement("Tree",false,1,false,false,0,0,new WorldElement("Wood",true,int.MaxValue))},
 			{"Wood", new WorldElement("Wood",true,int.MaxValue)},
 			{"Stone",  new WorldElement("Stone",true,int.MaxValue)},
-			{"Bush",new WorldElement("Bush",false,0,false,0,new WorldElement("Stick",true,int.MaxValue)) },
+			{"Bush",new WorldElement("Bush",false,0,false,false,0,0,new WorldElement("Stick",true,int.MaxValue)) },
 			{"Stick", new WorldElement("Stick",true,int.MaxValue)},
-			{"StoneChopper",new WorldElement("StoneChopper",true,int.MaxValue,true,1) }
+			{"StoneChopper",new WorldElement("StoneChopper",true,int.MaxValue,true,false,1,5) },
+			{"Heap",new WorldElement("Heap",false,int.MaxValue,true,true) }
         };
 		public GameModel(int worldSize)
 		{
@@ -41,6 +42,13 @@ namespace PixelRPG
 			World = CreateWorld(worldSize);
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
+		}
+
+		public void MoveEntity(Entity entity, Point point)
+		{
+			Mobs.Remove(entity.Position);
+			entity.SetPosition(point);
+			Mobs[point]=entity;
 		}
 
 		public List<Entity> GetNatureMobs()
@@ -63,7 +71,9 @@ namespace PixelRPG
 				if (World[x,y].Name=="Empty")
 				{
 					var mobPrototype = NatureMobsPrototypes[random.Next(0, NatureMobsPrototypes.Count)];
-					mobs[new Point(x,y)]=new Entity(mobPrototype.Name,mobPrototype.Action,mobPrototype.Health,new Point(x,y),Sides.Down,new Inventory());
+					var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y), Sides.Down, new Inventory());
+					entity.Inventory.AddInFirstEmptySlot(AllWorldElements["Turf"]);
+					mobs[entity.Position] = entity;
 					spavnedMobsCount++;
 				}
 			} while (spavnedMobsCount < MobCount);
