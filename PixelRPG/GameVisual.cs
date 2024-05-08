@@ -23,8 +23,11 @@ namespace PixelRPG
         public event Action OpenMenuView;
         public event Action<Inventory> ChangeCraftImagesView;
 		public event Action<int, int, Image> AddImageInFirstLay;
+		public event Action ChangeHealthView;
+		public event Action ChangeFoodView;
 
-
+		public void ChangePlayerFoodView() => ChangeFoodView();
+		public void ChangePlayerHealthView() => ChangeHealthView();
         public void OpenInventory(Inventory inv) => OpenInventoryView(inv);
         public void CloseInventory() => CloseInventoryView();
         public void OpenMenu() => OpenMenuView();

@@ -20,7 +20,7 @@ namespace PixelRPG
         {
             for (int i = 0; i < array.GetLength(0); i++)
                 for (int j = 0; j < array.GetLength(1); j++)
-                    array[i, j] = new WorldElement("Empty", false, int.MaxValue,true);
+                    array[i, j] = new WorldElement(WorldElementType.Empty,"Empty", int.MaxValue,true);
         }
 
         public WorldElement[,] CopyArray(WorldElement[,] array)
@@ -49,7 +49,7 @@ namespace PixelRPG
                     if (InventorySlots[i, j].Name != "Empty")
                     {
                         InventorySlots[0,0] = InventorySlots[i,j];
-                        InventorySlots[i, j] = new WorldElement("Empty",false,int.MaxValue,true);
+                        InventorySlots[i, j] = new WorldElement(WorldElementType.Empty, "Empty",int.MaxValue,true);
                         result = true;
                         break;
                     }

@@ -14,6 +14,8 @@ namespace PixelRPG
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
         private PictureBox ArmSlot;
+        private PictureBox PlayerHealth;
+        private PictureBox PlayerFood;
         private PictureBox firstSelectedSlotInInventory;
         private PictureBox secondSelectedSlotInInventory;
         private List<PictureBox> craftImages = new List<PictureBox>();
@@ -48,54 +50,122 @@ namespace PixelRPG
             keyBar.Focus();
             keyBar.Select();
             controls.peacefulMobMoveTimer.Start();
+            GC.Collect();
         }
 
         public void AddAllPlayerData()
         {
             SetArmSlot();
+            SetPlayerHealth();
+            SetPlayerFood();
             Controls.Add(ArmSlot);
+            Controls.Add(PlayerHealth);
+            Controls.Add(PlayerFood);
+        }
+
+        public PictureBox SetOnePlayerData(Image image, Size size, Point location)
+        {
+            PictureBox usableField;
+            var element = new PictureBox()
+            {
+                BackColor = Color.Gray,
+                Image = image,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Size = size,
+                Location = location
+            };
+            element.Paint += (sender, e) =>
+            {
+                var penWidth = element.Width / 20;
+                e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, element.Width - 2, element.Height - 2);
+            };
+            usableField = element;
+            SizeChanged += (sender, e) =>
+            {
+                usableField.Size = size;
+                usableField.Location = location;
+            };
+            return usableField;
+        }
+
+        public void SetPlayerFood()
+        {
+            PlayerFood = SetOnePlayerData(Image.FromFile(@"images/icons/FoodFull.png"),
+                new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 2))));
+            SizeChanged += (sender, e) =>
+            {
+                PlayerFood.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                PlayerFood.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 2)));
+            };
+        }
+
+        public void SetPlayerHealth()
+        { 
+            PlayerHealth=SetOnePlayerData(Image.FromFile(@"images/icons/HeartFull.png"),
+                 new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                 new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize / 2)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 2))));
+            SizeChanged += (sender, e) => 
+            {
+                PlayerHealth.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                PlayerHealth.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize / 2)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 2)));
+            };
         }
 
         public void SetArmSlot()
         {
-            var currentSlot = new PictureBox()
-            {
-                BackColor = Color.Gray,
-                Image = Image.FromFile(game.FileName(game.Player.Inventory.InventorySlots[0, 0])),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
-                Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)))
-            };
-            currentSlot.Paint += (sender, e) =>
-            {
-                var penWidth = currentSlot.Width / 20;
-                e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, currentSlot.Width - 2, currentSlot.Height - 2);
-            };
-            ArmSlot = currentSlot;
+            ArmSlot = SetOnePlayerData(Image.FromFile(game.FileName(game.Player.Inventory.InventorySlots[0, 0])),
+                new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize))));
             SizeChanged += (sender, e) =>
             {
                 ArmSlot.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
                 ArmSlot.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize)));
             };
         }
+        public Bitmap ChangeImageAlpha(Image image, int a)
+        {
+            var bitmap = (Bitmap)image;
+            Bitmap bmp = new Bitmap(bitmap.Width, bitmap.Height);
+            for (int i = 0; i < bmp.Width; i++)
+                for (int j = 0; j < bmp.Height; j++)
+                    if (bitmap.GetPixel(i, j).A != 0)
+                        bmp.SetPixel(i, j, Color.FromArgb(a, bitmap.GetPixel(i, j).R, bitmap.GetPixel(i, j).G, bitmap.GetPixel(i, j).B));
+            return bmp;
+        }
+
+        public Bitmap CompareImages(Image image1, Image image2,int percentSizeSecondImage)
+        {
+            var bmpUnder = (Bitmap)image1;
+            var bmpOn = (Bitmap)image2;
+            var g = Graphics.FromImage(bmpUnder);
+            g.DrawImage(bmpOn,
+                (bmpUnder.Size.Width - bmpUnder.Size.Width * percentSizeSecondImage / 100) / 2,
+                (bmpUnder.Size.Height - bmpUnder.Size.Height * percentSizeSecondImage / 100) / 2,
+                bmpUnder.Size.Width * percentSizeSecondImage / 100,
+                bmpUnder.Size.Height * percentSizeSecondImage / 100);
+            g.Dispose();
+            return bmpUnder;
+        }
 
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
+            visual.ChangeFoodView += () =>
+            {
+                var imageUnder = Image.FromFile(@"images/icons/FoodEmpty.png");
+                var imageOn = ChangeImageAlpha(Image.FromFile(@"images/icons/FoodFull.png"), 255 * game.Player.Satiety / game.Player.MaxSatiety);
+                PlayerFood.Image = CompareImages(imageUnder, imageOn, 100);
+            };
+            visual.ChangeHealthView += () =>
+            {
+                var imageUnder = Image.FromFile(@"images/icons/HeartEmpty.png");
+                var imageOn = ChangeImageAlpha(Image.FromFile(@"images/icons/HeartFull.png"), 255 * game.Player.Health / game.Player.MaxHealth);
+                PlayerHealth.Image = CompareImages(imageUnder, imageOn, 100);
+            };
             visual.AddImageInFirstLay += (i, j, im) =>
             {
-                var per = 70;
                 var p = (PictureBox)table.GetControlFromPosition(i, j);
-                var bmpUnder = (Bitmap)p.Image;
-                var bmpOn = (Bitmap)im;
-                var g = Graphics.FromImage(bmpUnder);
-                g.DrawImage(bmpOn,
-                    (bmpUnder.Size.Width - bmpUnder.Size.Width * per / 100) / 2,
-                    (bmpUnder.Size.Height - bmpUnder.Size.Height * per / 100) / 2,
-                    bmpUnder.Size.Width * per / 100,
-                    bmpUnder.Size.Height * per / 100);
-                g.Dispose();
-                p.Image = bmpUnder;
-                p.Refresh();
+                p.Image = CompareImages(p.Image,im,70);
             };
             visual.OpenInventoryView += (Inventory inv) => ViewInventory(inv);
             visual.CloseInventoryView += () => CloseInventory();
@@ -290,12 +360,26 @@ namespace PixelRPG
             }
         }
 
+        public void RemovePlayerDataFromView()
+        {
+            Controls.Remove(ArmSlot);
+            Controls.Remove(PlayerHealth);
+            Controls.Remove(PlayerFood);
+        }
+
+        public void AddPlayerDataView()
+        {
+            Controls.Add(ArmSlot);
+            Controls.Add(PlayerHealth);
+            Controls.Add(PlayerFood);
+        }
+
         public void ViewInventory(Inventory inventory)
         {
             var table = SetInventoryTable(inventory);
             SetImagesInInventory(table, inventory);
             Controls.Remove(gameView);
-            Controls.Remove(ArmSlot);
+            RemovePlayerDataFromView();
             Controls.Add(table);
             lastInventoryView = table;
         }
@@ -307,7 +391,7 @@ namespace PixelRPG
             secondSelectedSlotInInventory = null;
             game.Player.Inventory.ClearSlots();
             Controls.Remove(lastInventoryView);
-            Controls.Add(ArmSlot);
+            AddPlayerDataView();
             Controls.Add(gameView);
         }
 

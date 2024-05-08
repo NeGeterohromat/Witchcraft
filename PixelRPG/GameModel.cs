@@ -8,41 +8,43 @@ namespace PixelRPG
 		public WorldElement[,] World { get; private set; }
 		public Dictionary<Point,Entity> Mobs { get; private set; }
         public Dictionary<Point, Chest> Chests { get; private set; }
-        public readonly WorldElement OutOfBounds = new WorldElement("OutOfBounds", false, int.MaxValue);
+        public readonly WorldElement OutOfBounds = new WorldElement(WorldElementType.Block,"OutOfBounds", int.MaxValue);
 		private const double emptyPercent = 3d / 4;
 		private const int MobCount = 25;
         public const double peacefulMobMoveChance = 1d / 10;
         public const int peacefulMobMoveTick = 1*1000;
 		public const double enemyMobMoveChance = 1d / 2;
+		public const double DecreacingSatietyChance = 1d/20;
         public readonly List<WorldElement> NatureWorldElementsList;
 		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2;
 		public readonly List<Entity> NatureMobsPrototypes;
 		public readonly Dictionary<string, Entity> AllMobsPrototypes = new Dictionary<string, Entity>()
 		{
-			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,1,new ArmCraft()) },
-			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,0,new Inventory()) },
-			{"Zombie", new Entity("Zombie",EntityActionType.Enemy,20,new Point(-1,-1),Sides.Down,2,new Inventory()) }
+			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,1,20,new ArmCraft()) },
+			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,0,20,new Inventory()) },
+			{"Zombie", new Entity("Zombie",EntityActionType.Enemy,20,new Point(-1,-1),Sides.Down,2,20, new Inventory()) }
 		};
 		public readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
 		{
-			{"OutOfBounds",new WorldElement("OutOfBounds", false, int.MaxValue) },
-			{"Empty",new WorldElement("Empty",false,int.MaxValue,true) },
-			{"Grass", new WorldElement("Grass",false,0,true,false,0,0,new WorldElement("Turf",true,int.MaxValue))},
-			{"Turf",new WorldElement("Turf",true,int.MaxValue) },
-			{"Tree",  new WorldElement("Tree",false,1,false,false,0,0,new WorldElement("Wood",true,int.MaxValue))},
-			{"Wood", new WorldElement("Wood",true,int.MaxValue)},
-			{"Stone",  new WorldElement("Stone",true,int.MaxValue)},
-			{"Bush",new WorldElement("Bush",false,0,false,false,0,0,new WorldElement("Stick",true,int.MaxValue)) },
-			{"Stick", new WorldElement("Stick",true,int.MaxValue)},
-			{"StoneChopper",new WorldElement("StoneChopper",true,int.MaxValue,true,false,1,5) },
-			{"Heap",new WorldElement("Heap",false,int.MaxValue,false,true) },
-			{"RawChicken",new WorldElement("RawChicken",true,int.MaxValue) } 
+			{"OutOfBounds",new WorldElement(WorldElementType.Block,"OutOfBounds", int.MaxValue) },
+			{"Empty",new WorldElement(WorldElementType.Empty,"Empty",int.MaxValue,true) },
+			{"Grass", new WorldElement(WorldElementType.Block,"Grass",0,true,0,1,null,new WorldElement(WorldElementType.Thing,"Turf",int.MaxValue))},
+			{"Turf",new WorldElement(WorldElementType.Thing, "Turf",int.MaxValue) },
+			{"Tree",  new WorldElement(WorldElementType.Block,"Tree",1,false,0,1,null,new WorldElement(WorldElementType.Thing,"Wood",int.MaxValue))},
+			{"Wood", new WorldElement(WorldElementType.Thing, "Wood",int.MaxValue)},
+			{"Stone",  new WorldElement(WorldElementType.Thing, "Stone",int.MaxValue)},
+			{"Bush",new WorldElement(WorldElementType.Block,"Bush",0,false,0,1,null, new WorldElement(WorldElementType.Thing, "Stick",int.MaxValue)) },
+			{"Stick", new WorldElement(WorldElementType.Thing, "Stick",int.MaxValue)},
+			{"StoneChopper",new WorldElement(WorldElementType.Thing, "StoneChopper",int.MaxValue,true,1,5) },
+			{"Heap",new WorldElement(WorldElementType.Block,"Heap",int.MaxValue,false) },
+			{"RawChicken",new WorldElement(WorldElementType.Food, "RawChicken",int.MaxValue,true,0,1,5) } 
         };
 		public GameModel(int worldSize)
 		{
             Crafts2by2 = GetCrafts();
             NatureWorldElementsList = GetNatureWorldElementList();
 			Player = AllMobsPrototypes["Player"];
+			Player.IncreaseHealth(Player.MaxHealth);
 			World = CreateWorld(worldSize);
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
@@ -79,11 +81,11 @@ namespace PixelRPG
 			{
 				var x = random.Next(0,World.GetLength(0));
 				var y = random.Next(0, World.GetLength(1));
-				if (World[x,y].Name=="Empty" && !mobs.ContainsKey(new Point(x,y)))
+				if (World[x,y].Type == WorldElementType.Empty && !mobs.ContainsKey(new Point(x,y)))
 				{
 					var mobPrototype = NatureMobsPrototypes[random.Next(0, NatureMobsPrototypes.Count)];
 					var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y),
-						Sides.Down,mobPrototype.BaseDamage, new Inventory());
+						Sides.Down,mobPrototype.BaseDamage,mobPrototype.Satiety, new Inventory());
 					entity.Inventory.AddInFirstEmptySlot(AllWorldElements["RawChicken"]);
 					mobs[entity.Position] = entity;
 					spavnedMobsCount++;

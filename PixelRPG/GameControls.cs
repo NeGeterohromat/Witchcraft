@@ -27,11 +27,11 @@ public class GameControls
 	{
         this.game = game;
         this.visual = visual;
-        peacefulMobMoveTimer = GetPeacefulMobMoveTimer();
+        peacefulMobMoveTimer = GetWorldTimer();
         isPlayerDamaged = false;
 	}
 
-    public System.Windows.Forms.Timer GetPeacefulMobMoveTimer()
+    public System.Windows.Forms.Timer GetWorldTimer()
     {
         var timer = new System.Windows.Forms.Timer();
         timer.Interval = GameModel.peacefulMobMoveTick;
@@ -47,6 +47,7 @@ public class GameControls
                         MoveToPlayerAndAttack(entity);
                         break;
                 }
+            DecreaceSatiety();
             visual.GetWorldVisual(game.Player.Position);
             if (isPlayerDamaged)
             {
@@ -55,11 +56,22 @@ public class GameControls
                 {
                     Death(game.Player);
                     visual.OpenMenu();
+                    timer.Stop();
                 }
                 isPlayerDamaged = false;
             }
         };
         return timer;
+    }
+
+    private void DecreaceSatiety()
+    {
+        var random = new Random();
+        if (random.NextDouble() <GameModel.DecreacingSatietyChance)
+        {
+            game.Player.DecreaseSatiety(1);
+            visual.ChangePlayerFoodView();
+        }
     }
 
     private void Death(Entity entity)
@@ -98,6 +110,7 @@ public class GameControls
             if (game.Player.Position == new Point(entity.Position.X + point.X, entity.Position.Y + point.Y))
             {
                 game.Player.DamageEntity(entity.BaseDamage);
+                visual.ChangePlayerHealthView();
                 isPlayerDamaged = true;
             }
         }
@@ -215,7 +228,7 @@ public class GameControls
         }
         if (controlChar == (char)Keys.P)
         {
-            if (frontElement.Name == "Empty" && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Name != "Empty")
+            if (frontElement.Type == WorldElementType.Empty && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Type != WorldElementType.Empty)
             {
                 game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
                 game.Player.Inventory.InventorySlots[0, 0] = game.NatureWorldElementsList[0];
@@ -283,6 +296,22 @@ public class GameControls
             if (IsInventoryOpen && armCraft.Craft(game.Crafts2by2))
             {
                 visual.ChangeCraftImages(game.Player.Inventory);
+            }
+        }
+        if (controlChar == (char)Keys.P)
+        {
+            var armCraft = game.Player.Inventory as ArmCraft;
+            if (armCraft.SelectedSlots.Count  > 0)
+            {
+                var data = armCraft.SelectedSlots.ElementAt(armCraft.SelectedSlots.Count-1);
+                var element = armCraft.InventorySlots[data.X, data.Y];
+                if (element.Type == WorldElementType.Food)
+                {
+                    armCraft.SelectedSlots.Dequeue();
+                    armCraft.InventorySlots[data.X, data.Y] = game.AllWorldElements["Empty"];
+                    game.Player.IncreaseSatiety((int)element.SatietyBonus);
+                    visual.ChangeInventoryCell(armCraft.SelectedSlots.Count+1, armCraft.InventorySlots[data.X, data.Y]);
+                }
             }
         }
     }

@@ -26,6 +26,13 @@ namespace PixelRPG
         Player,
         Peaceful,
         Enemy
-
+    }
+    public enum WorldElementType
+    {
+        Empty,
+        Thing,
+        Block,
+        Food,
+        Armor
     }
 }
