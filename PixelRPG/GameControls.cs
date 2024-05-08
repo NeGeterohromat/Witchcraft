@@ -6,10 +6,11 @@ public class GameControls
 {
     private GameModel game;
     private GameVisual visual;
+    private bool isPlayerDamaged;
     public readonly System.Windows.Forms.Timer peacefulMobMoveTimer;
     private static Dictionary<char, Sides> turns = new Dictionary<char, Sides>()
     {
-        { 'A',Sides.Left },
+        {'A',Sides.Left },
         {'S',Sides.Down },
         {'D',Sides.Right },
         {'W',Sides.Up }
@@ -27,6 +28,7 @@ public class GameControls
         this.game = game;
         this.visual = visual;
         peacefulMobMoveTimer = GetPeacefulMobMoveTimer();
+        isPlayerDamaged = false;
 	}
 
     public System.Windows.Forms.Timer GetPeacefulMobMoveTimer()
@@ -35,11 +37,70 @@ public class GameControls
         timer.Interval = GameModel.peacefulMobMoveTick;
         timer.Tick += (sender, e) =>
         {
-            foreach (var entity in visual.CurrentViewedMobs.Where(en=>en.Value.Action == EntityActionType.Peaceful))
-                RandomEntityMove(entity.Value);
+            foreach (var entity in visual.CurrentViewedMobs.Values)
+                switch (entity.Action)
+                {
+                    case EntityActionType.Peaceful:
+                        RandomEntityMove(entity);
+                        break;
+                    case EntityActionType.Enemy:
+                        MoveToPlayerAndAttack(entity);
+                        break;
+                }
             visual.GetWorldVisual(game.Player.Position);
+            if (isPlayerDamaged)
+            {
+                visual.ViewDamageEffect(game.Player.Position);
+                if (game.Player.Health == 0)
+                {
+                    Death(game.Player);
+                    visual.OpenMenu();
+                }
+                isPlayerDamaged = false;
+            }
         };
         return timer;
+    }
+
+    private void Death(Entity entity)
+    {
+        game.Mobs.Remove(entity.Position);
+        game.Chests[entity.Position] = new Chest(entity.Inventory, game.Player.Inventory);
+        game.World[entity.Position.X, entity.Position.Y] = game.AllWorldElements["Heap"];
+        visual.ChangeOneCellByWorldCoords(entity.Position.X, entity.Position.Y, game.World[entity.Position.X, entity.Position.Y]);
+    }
+
+    private void SetDirectionOrMove(Entity entity, Sides side)
+    {
+        var point = moves[side];
+        if (entity.Direction == side)
+            game.MoveEntity(entity,new Point(entity.Position.X + point.X, entity.Position.Y + point.Y));
+        else
+            entity.SetDirection(side);
+    }
+
+    private void MoveToPlayerAndAttack(Entity entity)
+    {
+        var random = new Random();
+        var vertical = entity.Position.Y - game.Player.Position.Y;
+        var horisontal = entity.Position.X - game.Player.Position.X;
+        if (random.NextDouble() < GameModel.enemyMobMoveChance)
+        {
+            if (vertical > 0)
+                SetDirectionOrMove(entity, Sides.Up);
+            else if (vertical < 0)
+                SetDirectionOrMove(entity, Sides.Down);
+            else if (horisontal > 0)
+                SetDirectionOrMove(entity, Sides.Left);
+            else if (horisontal < 0)
+                SetDirectionOrMove(entity, Sides.Right);
+            var point = moves[entity.Direction];
+            if (game.Player.Position == new Point(entity.Position.X + point.X, entity.Position.Y + point.Y))
+            {
+                game.Player.DamageEntity(entity.BaseDamage);
+                isPlayerDamaged = true;
+            }
+        }
     }
 
     private void RandomEntityMove(Entity entity)
@@ -79,7 +140,8 @@ public class GameControls
         (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data)
     {
         var armCraft = game.Player.Inventory as ArmCraft;
-        var chest = game.Chests[new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y)];
+        var frontPoint = new Point(game.Player.Position.X + moves[game.Player.Direction].X, game.Player.Position.Y + moves[game.Player.Direction].Y);
+        var chest = game.Chests.ContainsKey(frontPoint) ? game.Chests[frontPoint] : null;
         switch (second)
         {
             case InventoryTypes.Main:
@@ -148,12 +210,7 @@ public class GameControls
                 entity.DamageEntity(game.Player.Inventory.InventorySlots[0, 0].Damage);
                 visual.ViewDamageEffect(entity.Position);
                 if (entity.Health == 0)
-                {
-                    game.Mobs.Remove(frontPoint);
-                    game.Chests[frontPoint] = new Chest(entity.Inventory,game.Player.Inventory);
-                    game.World[entity.Position.X, entity.Position.Y] = game.AllWorldElements["Heap"];
-                    visual.ChangeOneCellByWorldCoords(entity.Position.X, entity.Position.Y, game.World[entity.Position.X, entity.Position.Y]);
-                }
+                    Death(entity);
             }
         }
         if (controlChar == (char)Keys.P)
@@ -195,7 +252,7 @@ public class GameControls
         if (controlChar == (char)Keys.J)
         {
             var armCraft = game.Player.Inventory as ArmCraft;
-            var chest = game.Chests[frontPoint];
+            var chest = game.Chests.ContainsKey(frontPoint)? game.Chests[frontPoint]:null;
             var data = chest == null? armCraft.ChangeSelectedSlots():chest.ChangeSelectedSlots();
             if (data.IsComplete)
                 switch (data.First.Type)

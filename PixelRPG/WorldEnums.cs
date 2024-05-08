@@ -26,5 +26,6 @@ namespace PixelRPG
         Player,
         Peaceful,
         Enemy
+
     }
 }

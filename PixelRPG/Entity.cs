@@ -14,7 +14,8 @@ namespace PixelRPG
         public Point Position { get; private set; }
         public Sides Direction { get; private set; }
         public Inventory Inventory { get; private set; }
-        public Entity(string name, EntityActionType action, int health, Point position, Sides direction, Inventory inventory)
+        public int BaseDamage { get; private set; }
+        public Entity(string name, EntityActionType action, int health, Point position, Sides direction,int baseDamage, Inventory inventory)
         {
             Name = name;
             Action = action;
@@ -22,6 +23,7 @@ namespace PixelRPG
             Position = position;
             Direction = direction;
             Inventory = inventory;
+            BaseDamage = baseDamage;
         }
 
         public void SetPosition(Point newPosition) => Position = newPosition;

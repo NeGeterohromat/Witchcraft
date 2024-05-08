@@ -95,6 +95,7 @@ namespace PixelRPG
                     bmpUnder.Size.Height * per / 100);
                 g.Dispose();
                 p.Image = bmpUnder;
+                p.Refresh();
             };
             visual.OpenInventoryView += (Inventory inv) => ViewInventory(inv);
             visual.CloseInventoryView += () => CloseInventory();
@@ -247,7 +248,7 @@ namespace PixelRPG
                             craftImages.Add(p);
                             break;
                         case InventoryTypes.Chest:
-                            image = Image.FromFile(game.FileName(currentChestInventory.ChestInventory.InventorySlots[i - 1, j]));
+                            image = Image.FromFile(game.FileName(currentChestInventory.ChestInventory.InventorySlots[j,i-1]));
                             p = GetInventoryImage(image,j,i-1,InventoryTypes.Chest, inventory);
                             craftImages.Add(p);
                             break;

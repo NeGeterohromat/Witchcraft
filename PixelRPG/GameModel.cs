@@ -13,13 +13,15 @@ namespace PixelRPG
 		private const int MobCount = 25;
         public const double peacefulMobMoveChance = 1d / 10;
         public const int peacefulMobMoveTick = 1*1000;
+		public const double enemyMobMoveChance = 1d / 2;
         public readonly List<WorldElement> NatureWorldElementsList;
 		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2;
 		public readonly List<Entity> NatureMobsPrototypes;
 		public readonly Dictionary<string, Entity> AllMobsPrototypes = new Dictionary<string, Entity>()
 		{
-			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,new ArmCraft()) },
-			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,new Inventory()) }
+			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,1,new ArmCraft()) },
+			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,0,new Inventory()) },
+			{"Zombie", new Entity("Zombie",EntityActionType.Enemy,20,new Point(-1,-1),Sides.Down,2,new Inventory()) }
 		};
 		public readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
 		{
@@ -33,7 +35,8 @@ namespace PixelRPG
 			{"Bush",new WorldElement("Bush",false,0,false,false,0,0,new WorldElement("Stick",true,int.MaxValue)) },
 			{"Stick", new WorldElement("Stick",true,int.MaxValue)},
 			{"StoneChopper",new WorldElement("StoneChopper",true,int.MaxValue,true,false,1,5) },
-			{"Heap",new WorldElement("Heap",false,int.MaxValue,false,true) }
+			{"Heap",new WorldElement("Heap",false,int.MaxValue,false,true) },
+			{"RawChicken",new WorldElement("RawChicken",true,int.MaxValue) } 
         };
 		public GameModel(int worldSize)
 		{
@@ -48,18 +51,22 @@ namespace PixelRPG
 
 		public void MoveEntity(Entity entity, Point point)
 		{
-			Mobs.Remove(entity.Position);
-			entity.SetPosition(point);
-			Mobs[point]=entity;
-			if (!entity.Equals(Player))
-				PickItem(entity.Inventory, point);
+			if (IsStepablePoint(point))
+			{
+				Mobs.Remove(entity.Position);
+				entity.SetPosition(point);
+				Mobs[point] = entity;
+				if (!entity.Equals(Player))
+					PickItem(entity.Inventory, point);
+			}
 		}
 
 		public List<Entity> GetNatureMobs()
 		{
 			return new List<Entity>()
 			{
-				AllMobsPrototypes["Chicken"]
+				AllMobsPrototypes["Chicken"],
+				AllMobsPrototypes["Zombie"]
 			};
 		}
 
@@ -72,11 +79,12 @@ namespace PixelRPG
 			{
 				var x = random.Next(0,World.GetLength(0));
 				var y = random.Next(0, World.GetLength(1));
-				if (World[x,y].Name=="Empty")
+				if (World[x,y].Name=="Empty" && !mobs.ContainsKey(new Point(x,y)))
 				{
 					var mobPrototype = NatureMobsPrototypes[random.Next(0, NatureMobsPrototypes.Count)];
-					var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y), Sides.Down, new Inventory());
-					entity.Inventory.AddInFirstEmptySlot(AllWorldElements["Turf"]);
+					var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y),
+						Sides.Down,mobPrototype.BaseDamage, new Inventory());
+					entity.Inventory.AddInFirstEmptySlot(AllWorldElements["RawChicken"]);
 					mobs[entity.Position] = entity;
 					spavnedMobsCount++;
 				}
