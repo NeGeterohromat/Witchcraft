@@ -31,8 +31,14 @@ namespace PixelRPG
     {
         Empty,
         Thing,
+        Struckture,
         Block,
         Food,
         Armor
+    }
+    public enum MenuType
+    {
+        Main,
+        Escape
     }
 }

@@ -7,7 +7,7 @@ public class GameControls
     private GameModel game;
     private GameVisual visual;
     private bool isPlayerDamaged;
-    public readonly System.Windows.Forms.Timer peacefulMobMoveTimer;
+    public readonly System.Windows.Forms.Timer mobMoveTimer;
     private static Dictionary<char, Sides> turns = new Dictionary<char, Sides>()
     {
         {'A',Sides.Left },
@@ -23,11 +23,12 @@ public class GameControls
         {Sides.Up, new Point(0,-1)}
     };
     private bool IsInventoryOpen = false;
+    private Inventory InventoryOpen;
     public GameControls( GameModel game, GameVisual visual)
 	{
         this.game = game;
         this.visual = visual;
-        peacefulMobMoveTimer = GetWorldTimer();
+        mobMoveTimer = GetWorldTimer();
         isPlayerDamaged = false;
 	}
 
@@ -55,7 +56,7 @@ public class GameControls
                 if (game.Player.Health == 0)
                 {
                     Death(game.Player);
-                    visual.OpenMenu();
+                    visual.OpenMenu(MenuType.Escape);
                     timer.Stop();
                 }
                 isPlayerDamaged = false;
@@ -179,7 +180,7 @@ public class GameControls
     private void EscapeIfChar(char controlChar)
     {
         if (controlChar == (char)Keys.Escape)
-            visual.OpenMenu();
+            visual.OpenMenu(MenuType.Escape);
     }
 
     private void MoveIfChar(char controlChar)
@@ -230,16 +231,39 @@ public class GameControls
         {
             if (frontElement.Type == WorldElementType.Empty && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Type != WorldElementType.Empty)
             {
-                game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
-                game.Player.Inventory.InventorySlots[0, 0] = game.NatureWorldElementsList[0];
+                if (game.Player.Inventory.InventorySlots[0, 0].ParentBlockName != null)
+                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements[game.Player.Inventory.InventorySlots[0, 0].ParentBlockName];
+                else
+                    game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
+                game.Player.Inventory.InventorySlots[0, 0] = game.AllWorldElements["Empty"];
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
             else if (!IsInventoryOpen && game.Chests.ContainsKey(frontPoint))
             {
-                visual.OpenInventory(game.Chests[frontPoint]);
+                InventoryOpen = game.Chests[frontPoint];
+                visual.OpenInventory(InventoryOpen);
                 IsInventoryOpen = true;
             }
+        }
+        if (controlChar == (char)Keys.M)
+        {
+            var spellCentrePoint = new Point(game.Player.Position.X + moves[game.Player.Direction].X * (game.Player.CurrentSpell.DamageRange.GetLength(0) / 2 + 1),
+                game.Player.Position.Y + moves[game.Player.Direction].Y * (game.Player.CurrentSpell.DamageRange.GetLength(1) / 2 + 1));
+            var spellLeftTopPoint = new Point(spellCentrePoint.X - game.Player.CurrentSpell.DamageRange.GetLength(0) / 2,
+                spellCentrePoint.Y - game.Player.CurrentSpell.DamageRange.GetLength(1) / 2);
+            if (game.Player.DecreaseMana(game.Player.CurrentSpell.ManaWasting))
+                for (int i = 0; i < game.Player.CurrentSpell.DamageRange.GetLength(0); i++)
+                    for (int j = 0; j < game.Player.CurrentSpell.DamageRange.GetLength(1); j++)
+                        if (game.Player.CurrentSpell.DamageRange[i, j] != 0)
+                        {
+                            var currentPoint = new Point(spellLeftTopPoint.X + i, spellLeftTopPoint.Y + j);
+                            if (game.Mobs.ContainsKey(currentPoint))
+                                game.Mobs[currentPoint].DamageEntity(game.Player.CurrentSpell.DamageRange[i, j]);
+                            visual.ViewDamageEffect(currentPoint);
+                        }
+            visual.ChangePlayerManaView();
+            visual.ChangePlayerHealthView();
         }
     }
 
@@ -249,7 +273,7 @@ public class GameControls
         if (controlChar == (char)Keys.I)
             if (IsInventoryOpen)
             {
-                visual.CloseInventory();
+                visual.CloseInventory(InventoryOpen);
                 IsInventoryOpen = false;
                 if (game.Chests.ContainsKey(frontPoint) && game.Chests[frontPoint].IsEmpty())
                 {
@@ -259,7 +283,8 @@ public class GameControls
             }
             else
             {
-                visual.OpenInventory(game.Player.Inventory);
+                InventoryOpen = game.Player.Inventory;
+                visual.OpenInventory(InventoryOpen);
                 IsInventoryOpen = true;
             }
         if (controlChar == (char)Keys.J)
@@ -311,6 +336,7 @@ public class GameControls
                     armCraft.InventorySlots[data.X, data.Y] = game.AllWorldElements["Empty"];
                     game.Player.IncreaseSatiety((int)element.SatietyBonus);
                     visual.ChangeInventoryCell(armCraft.SelectedSlots.Count+1, armCraft.InventorySlots[data.X, data.Y]);
+                    visual.ChangePlayerFoodView();
                 }
             }
         }

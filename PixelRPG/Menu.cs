@@ -10,17 +10,13 @@ namespace PixelRPG
         public const float SideIndentPercent = 20f;
         private Button[] buttons;
         public readonly TableLayoutPanel MenuTable;
-        private int currentButtonIndex=0;
         public TextBox KeyBar { get; private set; }
-        public Menu()
+        public Menu(Color backColor,params (string Text, EventHandler Act)[] buttonData)
         {
-            CreateButtons();
+            CreateButtons(buttonData);
             ButtonCount = buttons.Length;
-            MenuTable = GetMenu();
+            MenuTable = GetMenu(backColor);
         }
-
-        public event Action StartGame;
-        public event Action CloseForm;
 
         public void ChangeButtonTextSize(int size)
         {
@@ -31,9 +27,9 @@ namespace PixelRPG
                 throw new ArgumentException();
         }
 
-        public TableLayoutPanel GetMenu()
+        public TableLayoutPanel GetMenu(Color backColor)
         {
-            var table = new TableLayoutPanel() { Dock = DockStyle.Fill, BackColor = Color.Purple };
+            var table = new TableLayoutPanel() { Dock = DockStyle.Fill, BackColor = backColor };
             SetTable(table);
             SetButtons(table);
             return table;
@@ -63,12 +59,11 @@ namespace PixelRPG
                     }
         }
 
-        private void CreateButtons()
+        private void CreateButtons(params (string Text, EventHandler Act)[] buttonData)
         {
-            buttons = new Button[3];
-            buttons[0] = CreateMenuButton("Новая игра", (sender, e) =>  StartGame() );
-            buttons[1] = CreateMenuButton("Настройки", (sender, e) => { throw new Exception("Не Сделано"); });
-            buttons[2] = CreateMenuButton("Выход", (sender, e) => CloseForm() );
+            buttons = new Button[buttonData.Length];
+            for (int i = 0; i < buttonData.Length; i++)
+                buttons[i] = CreateMenuButton(buttonData[i].Text, buttonData[i].Act);
         }
 
         public Button CreateMenuButton(string text, EventHandler act)

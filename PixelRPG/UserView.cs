@@ -10,12 +10,14 @@ namespace PixelRPG
         private GameModel game;
         private GameVisual visual;
         private GameControls controls;
-        private Menu menu;
+        private Menu mainMenu;
+        private Menu escapeMenu;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
         private PictureBox ArmSlot;
         private PictureBox PlayerHealth;
         private PictureBox PlayerFood;
+        private PictureBox PlayerMana;
         private PictureBox firstSelectedSlotInInventory;
         private PictureBox secondSelectedSlotInInventory;
         private List<PictureBox> craftImages = new List<PictureBox>();
@@ -25,11 +27,18 @@ namespace PixelRPG
         public readonly Color BaseWorldColor = Color.FromArgb(119, 185, 129);
         public UserView()
         {
-            menu = new Menu();
-            menu.StartGame += () => StartGame();
-            menu.CloseForm += () => Close();
-            SizeChanged += (sender, e) => menu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
-            Controls.Add(menu.MenuTable);
+            mainMenu = new Menu(Color.Purple,
+                ("Новая игра", (sender, e) => StartGame()),
+                ("Настройки", (sender, e) =>  throw new Exception("Не Сделано")),
+                ("Выход", (sender, e) => Close())
+                );
+            escapeMenu = new Menu(Color.Orange,
+                ("В главное меню",(sender,e)=> OpenMenu(MenuType.Main)),
+                ("Возродиться",(sender,e)=>RestartGame())
+                );
+            SizeChanged += (sender, e) => mainMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
+            SizeChanged += (sender, e) => escapeMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
+            Controls.Add(mainMenu.MenuTable);
         }
 
         public void StartGame()
@@ -49,7 +58,28 @@ namespace PixelRPG
             Controls.Add(keyBar);
             keyBar.Focus();
             keyBar.Select();
-            controls.peacefulMobMoveTimer.Start();
+            controls.mobMoveTimer.Start();
+            GC.Collect();
+        }
+
+        public void RestartGame()
+        {
+            Controls.Clear();
+            game.Player.IncreaseHealth(20);
+            game.Player.IncreaseSatiety(20);
+            game.Player.IncreaseMana(20);
+            var keyBar = new TextBox() { Size = new Size(0, 0) };
+            controls.SetKeyCommands(keyBar);
+            var tableView = visual.GetWorldVisual(game.Player.Position);
+            var table = SetImages(SetGameTable(), tableView);
+            gameView = table;
+            SetAllVisualDelegates(table);
+            AddAllPlayerData();
+            Controls.Add(table);
+            Controls.Add(keyBar);
+            keyBar.Focus();
+            keyBar.Select();
+            controls.mobMoveTimer.Start();
             GC.Collect();
         }
 
@@ -58,14 +88,12 @@ namespace PixelRPG
             SetArmSlot();
             SetPlayerHealth();
             SetPlayerFood();
-            Controls.Add(ArmSlot);
-            Controls.Add(PlayerHealth);
-            Controls.Add(PlayerFood);
+            SetPlayerMana();
+            AddPlayerDataView();
         }
 
         public PictureBox SetOnePlayerData(Image image, Size size, Point location)
         {
-            PictureBox usableField;
             var element = new PictureBox()
             {
                 BackColor = Color.Gray,
@@ -79,13 +107,19 @@ namespace PixelRPG
                 var penWidth = element.Width / 20;
                 e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, element.Width - 2, element.Height - 2);
             };
-            usableField = element;
+            return element;
+        }
+
+        public void SetPlayerMana()
+        {
+            PlayerMana = SetOnePlayerData(Image.FromFile(@"images/icons/ManaFull.png"),
+                new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize / 2)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 3))));
             SizeChanged += (sender, e) =>
             {
-                usableField.Size = size;
-                usableField.Location = location;
+                PlayerMana.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                PlayerMana.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize / 2)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 3)));
             };
-            return usableField;
         }
 
         public void SetPlayerFood()
@@ -150,6 +184,12 @@ namespace PixelRPG
 
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
+            visual.ChangeManaView += () =>
+            {
+                var imageUnder = Image.FromFile(@"images/icons/ManaEmpty.png");
+                var imageOn = ChangeImageAlpha(Image.FromFile(@"images/icons/ManaFull.png"), 255 * game.Player.Mana / game.Player.MaxMana);
+                PlayerMana.Image = CompareImages(imageUnder, imageOn, 100);
+            };
             visual.ChangeFoodView += () =>
             {
                 var imageUnder = Image.FromFile(@"images/icons/FoodEmpty.png");
@@ -167,18 +207,19 @@ namespace PixelRPG
                 var p = (PictureBox)table.GetControlFromPosition(i, j);
                 p.Image = CompareImages(p.Image,im,70);
             };
-            visual.OpenInventoryView += (Inventory inv) => ViewInventory(inv);
-            visual.CloseInventoryView += () => CloseInventory();
-            visual.OpenMenuView += () => OpenMenu();
+            visual.OpenInventoryView += (inv) => ViewInventory(inv);
+            visual.CloseInventoryView += (inv) => CloseInventory(inv);
+            visual.OpenMenuView += (type) => OpenMenu(type);
             visual.ChangeCraftImagesView += (inv) => ChangeCraftsImages(inv);
-            visual.ChangeOneCellView += (row, column, image) =>
+            visual.ChangeOneCellView += (row, column, image,mode) =>
             {
-                lock (image)
-                {
-                    var pict = (PictureBox)table.GetControlFromPosition(row, column);
-                    pict.Image = image;
-                    pict.SizeMode = PictureBoxSizeMode.Zoom;
-                }
+                var pict = (PictureBox)table.GetControlFromPosition(row, column);
+                if (pict.Margin.Equals(new Padding(0)) && mode != PictureBoxSizeMode.StretchImage)
+                    pict.Margin = new Padding(3);
+                if (mode == PictureBoxSizeMode.StretchImage)
+                    pict.Margin = new Padding(0);
+                pict.Image = image;
+                pict.SizeMode = mode;
             };
             visual.ChangeInventoryCellView += (number, cell) =>
             {
@@ -365,6 +406,7 @@ namespace PixelRPG
             Controls.Remove(ArmSlot);
             Controls.Remove(PlayerHealth);
             Controls.Remove(PlayerFood);
+            Controls.Remove(PlayerMana);
         }
 
         public void AddPlayerDataView()
@@ -372,6 +414,7 @@ namespace PixelRPG
             Controls.Add(ArmSlot);
             Controls.Add(PlayerHealth);
             Controls.Add(PlayerFood);
+            Controls.Add(PlayerMana);
         }
 
         public void ViewInventory(Inventory inventory)
@@ -384,21 +427,33 @@ namespace PixelRPG
             lastInventoryView = table;
         }
 
-        public void CloseInventory()
+        public void CloseInventory(Inventory inventory)
         {
             craftImages = new List<PictureBox>();
             firstSelectedSlotInInventory = null;
             secondSelectedSlotInInventory = null;
-            game.Player.Inventory.ClearSlots();
+            inventory.ClearSlots();
             Controls.Remove(lastInventoryView);
             AddPlayerDataView();
             Controls.Add(gameView);
         }
 
-        public void OpenMenu()
+        public void OpenMenu(MenuType type)
         {
-            Controls.Clear();
-            Controls.Add(menu.MenuTable);
+            Controls.Remove(gameView);
+            Controls.Remove(lastInventoryView);
+            Controls.Remove(escapeMenu.MenuTable);
+            Controls.Remove(mainMenu.MenuTable);
+            RemovePlayerDataFromView();
+            switch (type)
+            {
+                case MenuType.Main:
+                    Controls.Add(mainMenu.MenuTable);
+                    break;
+                case MenuType.Escape:
+                    Controls.Add(escapeMenu.MenuTable);
+                    break;
+            }
         }
     }
 }

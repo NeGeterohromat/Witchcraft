@@ -19,7 +19,7 @@ namespace PixelRPG
         public bool IsEmpty()
         {
             foreach (var slot in ChestInventory.InventorySlots) 
-                if (slot.Name != "Empty")
+                if (slot.Type != WorldElementType.Empty)
                     return false;
             return true;
         }
