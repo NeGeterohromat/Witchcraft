@@ -58,7 +58,7 @@ namespace PixelRPG
             Controls.Add(keyBar);
             keyBar.Focus();
             keyBar.Select();
-            controls.mobMoveTimer.Start();
+            controls.worldTimer.Start();
             GC.Collect();
         }
 
@@ -79,7 +79,7 @@ namespace PixelRPG
             Controls.Add(keyBar);
             keyBar.Focus();
             keyBar.Select();
-            controls.mobMoveTimer.Start();
+            controls.worldTimer.Start();
             GC.Collect();
         }
 
@@ -182,6 +182,19 @@ namespace PixelRPG
             return bmpUnder;
         }
 
+        public Task CreateDamageEffectTask(PictureBox pict, Image imBack, Image imDamage)
+        {
+            return new Task(() =>
+            {
+                for (int i = 1; i <= 5; i++)
+                {
+                    var imageOn = ChangeImageAlpha(imDamage, 255 * i / 8);
+                    pict.Image = CompareImages(imBack, imageOn, 70);
+                    Thread.Sleep(50);
+                }
+            });
+        }
+
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
             visual.ChangeManaView += () =>
@@ -202,10 +215,16 @@ namespace PixelRPG
                 var imageOn = ChangeImageAlpha(Image.FromFile(@"images/icons/HeartFull.png"), 255 * game.Player.Health / game.Player.MaxHealth);
                 PlayerHealth.Image = CompareImages(imageUnder, imageOn, 100);
             };
-            visual.AddImageInFirstLay += (i, j, im) =>
+            visual.ViewDamageAt += (i, j, im) =>
             {
                 var p = (PictureBox)table.GetControlFromPosition(i, j);
-                p.Image = CompareImages(p.Image,im,70);
+                var damagePict = new PictureBox() { Size = p.Size, Location = p.Location , SizeMode = p.SizeMode, BackColor = table.BackColor};
+                var pictImage = new Bitmap(p.Image);
+                var task = CreateDamageEffectTask(damagePict, pictImage, im);
+                Controls.Add(damagePict);
+                damagePict.BringToFront();
+                task.Start();
+                task.ContinueWith(task => Controls.Remove(damagePict), TaskScheduler.FromCurrentSynchronizationContext());
             };
             visual.OpenInventoryView += (inv) => ViewInventory(inv);
             visual.CloseInventoryView += (inv) => CloseInventory(inv);

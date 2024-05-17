@@ -7,7 +7,7 @@ public class GameControls
     private GameModel game;
     private GameVisual visual;
     private bool isPlayerDamaged;
-    public readonly System.Windows.Forms.Timer mobMoveTimer;
+    public readonly System.Windows.Forms.Timer worldTimer;
     private static Dictionary<char, Sides> turns = new Dictionary<char, Sides>()
     {
         {'A',Sides.Left },
@@ -28,7 +28,7 @@ public class GameControls
 	{
         this.game = game;
         this.visual = visual;
-        mobMoveTimer = GetWorldTimer();
+        worldTimer = GetWorldTimer();
         isPlayerDamaged = false;
 	}
 
@@ -38,6 +38,7 @@ public class GameControls
         timer.Interval = GameModel.peacefulMobMoveTick;
         timer.Tick += (sender, e) =>
         {
+            var random = new Random();
             foreach (var entity in visual.CurrentViewedMobs.Values)
                 switch (entity.Action)
                 {
@@ -49,20 +50,44 @@ public class GameControls
                         break;
                 }
             DecreaceSatiety();
+            if (game.Player.Satiety < 5)
+                if (random.NextDouble() < GameModel.ChangeHealthBecauseOfFoodChance)
+                {
+                    game.Player.DamageEntity(1);
+                    ViewDamagedPlayer(timer);
+                }
+            if (game.Player.Satiety > 15 && game.Player.Health < game.Player.MaxHealth)
+                if (random.NextDouble() < GameModel.ChangeHealthBecauseOfFoodChance)
+                {
+                    game.Player.IncreaseHealth(1);
+                    game.Player.DecreaseSatiety(1);
+                    visual.ChangePlayerHealthView();
+                    visual.ChangePlayerFoodView();
+                }
+            if (random.NextDouble() < GameModel.IncreacingManaChance)
+            {
+                game.Player.IncreaseMana(1);
+                visual.ChangePlayerManaView();
+            }
             visual.GetWorldVisual(game.Player.Position);
             if (isPlayerDamaged)
             {
-                visual.ViewDamageEffect(game.Player.Position);
-                if (game.Player.Health == 0)
-                {
-                    Death(game.Player);
-                    visual.OpenMenu(MenuType.Escape);
-                    timer.Stop();
-                }
+                ViewDamagedPlayer(timer);
                 isPlayerDamaged = false;
             }
         };
         return timer;
+    }
+
+    private void ViewDamagedPlayer(System.Windows.Forms.Timer timer)
+    {
+        visual.ViewDamageEffect(game.Player.Position);
+        if (game.Player.Health == 0)
+        {
+            Death(game.Player);
+            visual.OpenMenu(MenuType.Escape);
+            timer.Stop();
+        }
     }
 
     private void DecreaceSatiety()

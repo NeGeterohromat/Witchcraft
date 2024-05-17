@@ -22,7 +22,7 @@ namespace PixelRPG
         public event Action<Inventory> CloseInventoryView;
         public event Action<MenuType> OpenMenuView;
         public event Action<Inventory> ChangeCraftImagesView;
-		public event Action<int, int, Image> AddImageInFirstLay;
+		public event Action<int, int, Image> ViewDamageAt;
 		public event Action ChangeHealthView;
 		public event Action ChangeFoodView;
 		public event Action ChangeManaView;
@@ -46,7 +46,7 @@ namespace PixelRPG
             var viewRow = worldPoint.X - game.Player.Position.X + ViewFieldSize / 2;
             var viewColumn = worldPoint.Y - game.Player.Position.Y + ViewFieldSize / 2;
 			if (viewRow >= 0 && viewRow < ViewFieldSize && viewColumn >= 0 && viewColumn < ViewFieldSize)
-				AddImageInFirstLay(viewRow, viewColumn, Image.FromFile(@"images/icons/damage.png"));
+				ViewDamageAt(viewRow, viewColumn, Image.FromFile(@"images/icons/damage.png"));
         }
 
         public void ChangeOneCellByWorldCoords(int row, int column, Entity mob) =>

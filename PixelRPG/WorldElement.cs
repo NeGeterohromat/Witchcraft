@@ -21,7 +21,7 @@ namespace PixelRPG
         public int? SatietyBonus;
         private int? hash;
         public WorldElement(WorldElementType type,string name, int breakLevel,
-            bool? canPlayerMoveIn = null, int powerToBreakOtherEl = 0,
+            bool? canPlayerMoveIn, int powerToBreakOtherEl = 0,
              int damage=1)
         {
             IsItem = (type == WorldElementType.Thing) || (type == WorldElementType.Food) || (type == WorldElementType.Armor);

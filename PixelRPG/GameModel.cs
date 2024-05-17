@@ -14,7 +14,9 @@ namespace PixelRPG
         public const double peacefulMobMoveChance = 1d / 10;
         public const int peacefulMobMoveTick = 1*1000;
 		public const double enemyMobMoveChance = 1d / 2;
-		public const double DecreacingSatietyChance = 1d/20;
+		public const double DecreacingSatietyChance = 1d / 20;
+		public const double ChangeHealthBecauseOfFoodChance = 1d / 3;
+		public const double IncreacingManaChance = 1d / 3;
         public readonly List<WorldElement> NatureWorldElementsList;
 		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2;
 		public readonly List<Entity> NatureMobsPrototypes;
