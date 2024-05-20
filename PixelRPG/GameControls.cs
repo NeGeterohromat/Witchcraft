@@ -81,7 +81,8 @@ public class GameControls
 
     private void ViewDamagedPlayer(System.Windows.Forms.Timer timer)
     {
-        visual.ViewDamageEffect(game.Player.Position);
+        if (!IsInventoryOpen)
+            visual.ViewDamageEffect(game.Player.Position);
         if (game.Player.Health == 0)
         {
             Death(game.Player);
@@ -254,7 +255,7 @@ public class GameControls
         }
         if (controlChar == (char)Keys.P)
         {
-            if (frontElement.Type == WorldElementType.Empty && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Type != WorldElementType.Empty)
+            if (!IsInventoryOpen && frontElement.Type == WorldElementType.Empty && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Type != WorldElementType.Empty)
             {
                 if (game.Player.Inventory.InventorySlots[0, 0].ParentBlockName != null)
                     game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements[game.Player.Inventory.InventorySlots[0, 0].ParentBlockName];
@@ -304,6 +305,7 @@ public class GameControls
                 {
                     game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Empty"];
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
+                    game.Chests.Remove(frontPoint);
                 }
             }
             else

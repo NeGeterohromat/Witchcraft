@@ -6,13 +6,15 @@ namespace PixelRPG
 	public class GameVisual
 	{
 		private GameModel game;
-		public const int ViewFieldSize = 20;
-		private WorldElement[,] CurrentWorldView = new WorldElement[ViewFieldSize, ViewFieldSize];
+		public static int ViewFieldSize { get; private set; }
+		private WorldElement[,] CurrentWorldView;
 		public Dictionary<Point, Entity> CurrentViewedMobs { get; private set; }
-        public GameVisual(GameModel game)
+        public GameVisual(GameModel game, int viewFieldSize)
 		{
+			ViewFieldSize = viewFieldSize;
 			this.game = game;
             CurrentViewedMobs = new Dictionary<Point, Entity>();
+			CurrentWorldView = new WorldElement[ViewFieldSize, ViewFieldSize];
         }
 
 		public event Action<int,int,Image,PictureBoxSizeMode> ChangeOneCellView;
@@ -26,6 +28,12 @@ namespace PixelRPG
 		public event Action ChangeHealthView;
 		public event Action ChangeFoodView;
 		public event Action ChangeManaView;
+
+		public void ChangeViewFieldSize(int i)
+		{ 
+			if (i>=5 && i<=60)
+				ViewFieldSize = i; 
+		}
 
 		public void ChangePlayerManaView() => ChangeManaView();
 		public void ChangePlayerFoodView() => ChangeFoodView();

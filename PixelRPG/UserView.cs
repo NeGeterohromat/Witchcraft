@@ -8,16 +8,22 @@ namespace PixelRPG
     public class UserView : Form
     {
         private GameModel game;
+        public static int gameSize {  get; private set; }
+        private bool isEnemySpawn = true;
+        public static int BaseSoundVolume { get; private set; }
         private GameVisual visual;
+        private int visualViewFieldSize = 20;
         private GameControls controls;
         private Menu mainMenu;
         private Menu escapeMenu;
+        private Settings settings;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
         private PictureBox ArmSlot;
         private PictureBox PlayerHealth;
         private PictureBox PlayerFood;
         private PictureBox PlayerMana;
+        private PictureBox PlayerCurrentMagicSpell;
         private PictureBox firstSelectedSlotInInventory;
         private PictureBox secondSelectedSlotInInventory;
         private List<PictureBox> craftImages = new List<PictureBox>();
@@ -27,9 +33,13 @@ namespace PixelRPG
         public readonly Color BaseWorldColor = Color.FromArgb(119, 185, 129);
         public UserView()
         {
+            gameSize = 40;
+            BaseSoundVolume = 0;
+            SetSettingsDelegates();
+            settings = new Settings();
             mainMenu = new Menu(Color.Purple,
                 ("Новая игра", (sender, e) => StartGame()),
-                ("Настройки", (sender, e) =>  throw new Exception("Не Сделано")),
+                ("Настройки", (sender, e) =>  { Controls.Remove(mainMenu.MenuTable); Controls.Add(settings.SettingsTable); }),
                 ("Выход", (sender, e) => Close())
                 );
             escapeMenu = new Menu(Color.Orange,
@@ -41,11 +51,36 @@ namespace PixelRPG
             Controls.Add(mainMenu.MenuTable);
         }
 
+        public void SetSettingsDelegates()
+        {
+            Settings.SoundVolumeChanged += i =>
+            {
+                if (i >= 0 && i <= 100)
+                    BaseSoundVolume = i;
+            };
+            Settings.WorldSizeChanged += i =>
+            {
+                if (i >= 10 && i <= 10000)
+                    gameSize = i;
+            };
+            Settings.BackToMenu += () =>
+            {
+                Controls.Remove(settings.SettingsTable);
+                Controls.Add(mainMenu.MenuTable);
+            };
+            Settings.EnemyDifficultChanged += b => isEnemySpawn = b;
+            Settings.VisualSizeChanged += i =>
+            {
+                if (i >= 5 && i <= 60)
+                    visualViewFieldSize = i;
+            };
+        }
+
         public void StartGame()
         {
             Controls.Clear();
-            game = new GameModel(40);
-            visual = new GameVisual(game);
+            game = new GameModel(gameSize,isEnemySpawn);
+            visual = new GameVisual(game,visualViewFieldSize);
             controls = new GameControls(game, visual);
             var keyBar = new TextBox() { Size = new Size(0,0)};
             controls.SetKeyCommands(keyBar);
@@ -89,6 +124,7 @@ namespace PixelRPG
             SetPlayerHealth();
             SetPlayerFood();
             SetPlayerMana();
+            SetCurrentMagicSpell();
             AddPlayerDataView();
         }
 
@@ -108,6 +144,18 @@ namespace PixelRPG
                 e.Graphics.DrawRectangle(new Pen(Color.Black, penWidth), 0, 0, element.Width - 2, element.Height - 2);
             };
             return element;
+        }
+
+        public void SetCurrentMagicSpell()
+        {
+            PlayerCurrentMagicSpell = SetOnePlayerData(Image.FromFile(@"images/icons/BaseSquare.png"),
+                new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
+                new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 3))));
+            SizeChanged += (sender, e) =>
+            {
+                PlayerCurrentMagicSpell.Size = new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize));
+                PlayerCurrentMagicSpell.Location = new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 3)));
+            };
         }
 
         public void SetPlayerMana()
@@ -426,6 +474,7 @@ namespace PixelRPG
             Controls.Remove(PlayerHealth);
             Controls.Remove(PlayerFood);
             Controls.Remove(PlayerMana);
+            Controls.Remove(PlayerCurrentMagicSpell);
         }
 
         public void AddPlayerDataView()
@@ -434,6 +483,7 @@ namespace PixelRPG
             Controls.Add(PlayerHealth);
             Controls.Add(PlayerFood);
             Controls.Add(PlayerMana);
+            Controls.Add(PlayerCurrentMagicSpell);
         }
 
         public void ViewInventory(Inventory inventory)

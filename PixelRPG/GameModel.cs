@@ -8,9 +8,10 @@ namespace PixelRPG
 		public WorldElement[,] World { get; private set; }
 		public Dictionary<Point,Entity> Mobs { get; private set; }
         public Dictionary<Point, Chest> Chests { get; private set; }
-        public readonly WorldElement OutOfBounds = new WorldElement(WorldElementType.Struckture,"OutOfBounds", int.MaxValue);
+        public readonly WorldElement OutOfBounds = new WorldElement(WorldElementType.Struckture,"OutOfBounds");
 		private const double emptyPercent = 3d / 4;
-		private const int MobCount = 25;
+		private int MobCount;
+		private bool isEnemySpawn = true;
         public const double peacefulMobMoveChance = 1d / 10;
         public const int peacefulMobMoveTick = 1*1000;
 		public const double enemyMobMoveChance = 1d / 2;
@@ -22,10 +23,11 @@ namespace PixelRPG
 		public readonly List<Entity> NatureMobsPrototypes;
 		public readonly Dictionary<string, Entity> AllMobsPrototypes = new Dictionary<string, Entity>()
 		{
-			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(7,13),Sides.Down,1,20,20,new ArmCraft()) },
+			{"Player",new Entity("Player",EntityActionType.Player,20,new Point(-1,-1),Sides.Down,1,20,20,new ArmCraft()) },
 			{"Chicken",new Entity("Chicken",EntityActionType.Peaceful,10,new Point(-1,-1),Sides.Down,0,20,0,new Inventory()) },
 			{"Zombie", new Entity("Zombie",EntityActionType.Enemy,20,new Point(-1,-1),Sides.Down,2,20,20, new Inventory()) }
 		};
+		public readonly Dictionary<string, List<(WorldElement El, double Chance)>> EntityDrops = new Dictionary<string, List<(WorldElement El, double Chance)>>();
 		public readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
 		{
 			{"OutOfBounds",new WorldElement(WorldElementType.Struckture,"OutOfBounds") },
@@ -43,7 +45,12 @@ namespace PixelRPG
 			{"WoodenPlanks",new WorldElement(WorldElementType.Block,"WoodenPlanks",1,false,new WorldElement(WorldElementType.Thing,"WoodenPlanksItem","WoodenPlanks")) },
 			{"DirtBlock",new WorldElement(WorldElementType.Block,"DirtBlock",0,false,new WorldElement(WorldElementType.Thing,"DirtBlockItem","DirtBlock")) },
 			{"WoodenPlanksItem", new WorldElement(WorldElementType.Thing,"WoodenPlanksItem","WoodenPlanks")},
-			{"DirtBlockItem", new WorldElement(WorldElementType.Thing,"DirtBlockItem","DirtBlock")}
+			{"DirtBlockItem", new WorldElement(WorldElementType.Thing,"DirtBlockItem","DirtBlock")},
+			{"RottenFlesh", new WorldElement(WorldElementType.Food,"RottenFlesh",1) },
+			{"ZombieHeart", new WorldElement(WorldElementType.Thing,"ZombieHeart") },
+			{"MagicDust", new WorldElement(WorldElementType.Thing,"MagicDust") },
+			{"SpellTable", new WorldElement(WorldElementType.Block,"SpellTable",0,false,new WorldElement(WorldElementType.Thing,"SpellTableItem","SpellTable")) },
+			{"SpellTableItem", new WorldElement(WorldElementType.Thing,"SpellTableItem","SpellTable")}
         };
 		public readonly Dictionary<string,MagicSpell> AllMagicSpells = new Dictionary<string,MagicSpell>()
 		{
@@ -54,18 +61,39 @@ namespace PixelRPG
 				{0,1,0 }
 			}, 3) }
 		};
-		public GameModel(int worldSize)
+		public GameModel(int worldSize, bool isEnemySpawn)
 		{
+            this.isEnemySpawn = isEnemySpawn;
+			MobCount = worldSize * worldSize * 25 / 40 / 40;
             Crafts2by2 = GetCrafts();
             NatureWorldElementsList = GetNatureWorldElementList();
-			Player = AllMobsPrototypes["Player"];
+            EntityDrops = GetEntityDrops();
+            Player = AllMobsPrototypes["Player"];
 			Player.IncreaseHealth(Player.MaxHealth);
 			Player.IncreaseSatiety(Player.MaxSatiety);
 			Player.AddSpell(AllMagicSpells["BaseSquare"]);
 			World = CreateWorld(worldSize);
+			Player.SetPosition(FindFirstSpawnPoint());
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
 			Chests = new Dictionary<Point, Chest>();
+		}
+		public Point FindFirstSpawnPoint()
+		{
+			for (int i = 1; i < World.GetLength(0); i++)
+				for (int j = 1; j < World.GetLength(1); j++)
+					if (World[i, j].Type == WorldElementType.Empty)
+						return new Point(i, j);
+			return new Point(0,0);
+		}
+
+		public Dictionary<string, List<(WorldElement El, double Chance)>> GetEntityDrops()
+		{
+			return new Dictionary<string, List<(WorldElement El, double Chance)>>()
+			{
+				{"Chicken", new List<(WorldElement El, double Chance)>(){(AllWorldElements["RawChicken"],1) } },
+				{"Zombie", new List<(WorldElement El, double Chance)>(){(AllWorldElements["RottenFlesh"],1),(AllWorldElements["ZombieHeart"],1d/3) } }
+			};
 		}
 
 		public void MoveEntity(Entity entity, Point point)
@@ -101,11 +129,17 @@ namespace PixelRPG
 				if (World[x,y].Type == WorldElementType.Empty && !mobs.ContainsKey(new Point(x,y)))
 				{
 					var mobPrototype = NatureMobsPrototypes[random.Next(0, NatureMobsPrototypes.Count)];
-					var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y),
-						Sides.Down,mobPrototype.BaseDamage,mobPrototype.Satiety,mobPrototype.Mana, new Inventory());
-					entity.Inventory.AddInFirstEmptySlot(AllWorldElements["RawChicken"]);
-					mobs[entity.Position] = entity;
-					spavnedMobsCount++;
+					if (isEnemySpawn || (!isEnemySpawn && mobPrototype.Action != EntityActionType.Enemy))
+					{
+						var entity = new Entity(mobPrototype.Name, mobPrototype.Action, mobPrototype.Health, new Point(x, y),
+						Sides.Down, mobPrototype.BaseDamage, mobPrototype.Satiety, mobPrototype.Mana, new Inventory());
+						if (EntityDrops.ContainsKey(entity.Name))
+							foreach (var item in EntityDrops[entity.Name])
+								if (random.NextDouble() < item.Chance)
+									entity.Inventory.AddInFirstEmptySlot(item.El);
+						mobs[entity.Position] = entity;
+						spavnedMobsCount++;
+					}
 				}
 			} while (spavnedMobsCount < MobCount);
 			return mobs;
@@ -158,6 +192,28 @@ namespace PixelRPG
                     new WorldElement[1,2]
                     {
                         {AllWorldElements["DirtBlockItem"], AllWorldElements["Empty"] }
+                    }
+                },
+                {
+                    new Craft(new WorldElement[2,2]
+                    {
+                        { AllWorldElements["ZombieHeart"], AllWorldElements["ZombieHeart"] },
+                        { AllWorldElements["Empty"],AllWorldElements["Empty"] }
+                    }),
+                    new WorldElement[1,2]
+                    {
+                        {AllWorldElements["MagicDust"], AllWorldElements["Empty"] }
+                    }
+                },
+                {
+                    new Craft(new WorldElement[2,2]
+                    {
+                        { AllWorldElements["MagicDust"], AllWorldElements["MagicDust"] },
+                        { AllWorldElements["MagicDust"],AllWorldElements["Wood"] }
+                    }),
+                    new WorldElement[1,2]
+                    {
+                        {AllWorldElements["SpellTableItem"], AllWorldElements["Empty"] }
                     }
                 }
             };

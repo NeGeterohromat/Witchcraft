@@ -10,7 +10,6 @@ namespace PixelRPG
         public const float SideIndentPercent = 20f;
         private Button[] buttons;
         public readonly TableLayoutPanel MenuTable;
-        public TextBox KeyBar { get; private set; }
         public Menu(Color backColor,params (string Text, EventHandler Act)[] buttonData)
         {
             CreateButtons(buttonData);
@@ -66,7 +65,7 @@ namespace PixelRPG
                 buttons[i] = CreateMenuButton(buttonData[i].Text, buttonData[i].Act);
         }
 
-        public Button CreateMenuButton(string text, EventHandler act)
+        public static Button CreateMenuButton(string text, EventHandler act)
         {
             var button = new Button()
             {
