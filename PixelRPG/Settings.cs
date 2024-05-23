@@ -10,8 +10,10 @@ namespace PixelRPG
     {
         public TableLayoutPanel SettingsTable {  get; private set; }
         private int SettingsCount = 4;
+        private List<Control> controlsWithText;
         public Settings() 
         {
+            controlsWithText = new List<Control>();
             SettingsTable = GetSettingsTable();
         }
 
@@ -20,6 +22,15 @@ namespace PixelRPG
         public static event Action<bool> EnemyDifficultChanged;
         public static event Action<int> VisualSizeChanged;
         public static event Action BackToMenu;
+
+        public void ChangeTextSize(int size)
+        {
+            if (size > 0)
+                foreach (var cont in controlsWithText)
+                    cont.Font = new Font(UserView.ButtonBasedFontFamily, size);
+            else if (size < 0)
+                throw new ArgumentException();
+        }
 
         private TableLayoutPanel GetSettingsTable()
         {
@@ -43,6 +54,10 @@ namespace PixelRPG
 
         public void SetControls(TableLayoutPanel table)
         {
+            var worldLabel = CreateSettingsLabel("Размер мира");
+            var soundLabel = CreateSettingsLabel("Громкость музыки");
+            var visualLabel = CreateSettingsLabel("Размер отображаемой области");
+            var difficultyLabel = CreateSettingsLabel("Сложность игры");
             var transparent = new PictureBox() { Dock = DockStyle.Fill, BackColor = Color.Transparent };
             var worldSizeText = CreateSettingsTextBox(UserView.gameSize, WorldSizeChanged);
             var soundText = CreateSettingsTextBox(UserView.BaseSoundVolume, SoundVolumeChanged);
@@ -56,17 +71,33 @@ namespace PixelRPG
             difficultyTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             difficultyTable.Controls.Add(easyButton,0,0);
             difficultyTable.Controls.Add(hardButton,1,0);
+            controlsWithText.Add(worldSizeText);
+            controlsWithText.Add(soundText);
+            controlsWithText.Add(visualSizeText);
+            controlsWithText.Add(easyButton);
+            controlsWithText.Add(hardButton);
+            controlsWithText.Add(exitButton);
+            controlsWithText.Add(worldLabel);
+            controlsWithText.Add(soundLabel);
+            controlsWithText.Add(visualLabel);
+            controlsWithText.Add(difficultyLabel);
             SetControlsInOneRow(table, 0, transparent, transparent, transparent, transparent);
-            SetControlsInOneRow(table, 1, transparent, new Label() { Dock = DockStyle.Fill, Text = "Размер мира", Font = new Font(UserView.ButtonBasedFontFamily, UserView.ButtonBasedTextSize) },
-                worldSizeText, transparent);
-            SetControlsInOneRow(table, 2, transparent, new Label() { Dock = DockStyle.Fill, Text = "Музыка и звуки", Font = new Font(UserView.ButtonBasedFontFamily, UserView.ButtonBasedTextSize) },
-                soundText,transparent);
-            SetControlsInOneRow(table, 3, transparent, new Label() { Dock = DockStyle.Fill, Text = "Сложность игры", Font = new Font(UserView.ButtonBasedFontFamily, UserView.ButtonBasedTextSize) },
-                difficultyTable, transparent);
-            SetControlsInOneRow(table, 4, transparent, new Label() { Dock = DockStyle.Fill, Text = "Размер области отображения", Font = new Font(UserView.ButtonBasedFontFamily, UserView.ButtonBasedTextSize) },
-                visualSizeText, transparent);
+            SetControlsInOneRow(table, 1, transparent, worldLabel, worldSizeText, transparent);
+            SetControlsInOneRow(table, 2, transparent, soundLabel, soundText,transparent);
+            SetControlsInOneRow(table, 3, transparent, difficultyLabel, difficultyTable, transparent);
+            SetControlsInOneRow(table, 4, transparent, visualLabel, visualSizeText, transparent);
             SetControlsInOneRow(table, 5, transparent, exitButton, transparent, transparent);
             SetControlsInOneRow(table, 6, transparent, transparent, transparent, transparent);
+        }
+
+        public Label CreateSettingsLabel(string text)
+        {
+            return new Label() 
+            { 
+                Dock = DockStyle.Fill, 
+                Text = text, 
+                Font = new Font(UserView.ButtonBasedFontFamily, UserView.ButtonBasedTextSize*5/18) 
+            };
         }
 
         public void SetControlsInOneRow(TableLayoutPanel table, int row, Control first, Control second, Control third, Control fourth)

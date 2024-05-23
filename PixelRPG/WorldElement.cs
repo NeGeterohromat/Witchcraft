@@ -17,6 +17,7 @@ namespace PixelRPG
         public readonly string? ParentBlockName;
         public readonly int Damage;
         public readonly bool IsItem;
+        public readonly bool IsChest;
         public readonly WorldElementType Type;
         public int? SatietyBonus;
         private int? hash;
@@ -34,9 +35,10 @@ namespace PixelRPG
             Type = type;
             SatietyBonus = null;
             ParentBlockName = null;
+            IsChest = false;
         }
 
-        public WorldElement(WorldElementType type,string name, int breakLevel, bool canPlayerMoveIn, WorldElement drop)
+        public WorldElement(WorldElementType type,string name, int breakLevel, bool canPlayerMoveIn, WorldElement drop, bool isChest = false)
         {
             IsItem = (type == WorldElementType.Thing) || (type == WorldElementType.Food) || (type == WorldElementType.Armor);
             Name = name;
@@ -48,9 +50,10 @@ namespace PixelRPG
             Type = type;
             SatietyBonus = null;
             ParentBlockName = null;
+            IsChest = isChest;
         }
 
-        public WorldElement(WorldElementType type, string name, string? parentBlockName = null)
+        public WorldElement(WorldElementType type, string name, string? parentBlockName = null, bool isChest = false)
         {
             IsItem = (type == WorldElementType.Thing) || (type == WorldElementType.Food) || (type == WorldElementType.Armor);
             Name = name;
@@ -62,6 +65,7 @@ namespace PixelRPG
             Type = type;
             SatietyBonus = null;
             ParentBlockName = parentBlockName;
+            IsChest = isChest;
         }
 
         public WorldElement(WorldElementType type,string name, int? satietyBonus)
@@ -76,6 +80,7 @@ namespace PixelRPG
             Type = type;
             SatietyBonus = satietyBonus;
             ParentBlockName = null;
+            IsChest = false;
         }
 
         public override bool Equals(object? obj)

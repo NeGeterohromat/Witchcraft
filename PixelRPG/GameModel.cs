@@ -40,7 +40,7 @@ namespace PixelRPG
 			{"Bush",new WorldElement(WorldElementType.Struckture,"Bush",0,false, new WorldElement(WorldElementType.Thing, "Stick")) },
 			{"Stick", new WorldElement(WorldElementType.Thing, "Stick")},
 			{"StoneChopper",new WorldElement(WorldElementType.Thing, "StoneChopper",int.MaxValue,true,1,5) },
-			{"Heap",new WorldElement(WorldElementType.Struckture,"Heap",int.MaxValue,false) },
+			{"Heap",new WorldElement(WorldElementType.Struckture,"Heap",int.MaxValue,false,null,true) },
 			{"RawChicken",new WorldElement(WorldElementType.Food, "RawChicken",5) },
 			{"WoodenPlanks",new WorldElement(WorldElementType.Block,"WoodenPlanks",1,false,new WorldElement(WorldElementType.Thing,"WoodenPlanksItem","WoodenPlanks")) },
 			{"DirtBlock",new WorldElement(WorldElementType.Block,"DirtBlock",0,false,new WorldElement(WorldElementType.Thing,"DirtBlockItem","DirtBlock")) },
@@ -50,7 +50,9 @@ namespace PixelRPG
 			{"ZombieHeart", new WorldElement(WorldElementType.Thing,"ZombieHeart") },
 			{"MagicDust", new WorldElement(WorldElementType.Thing,"MagicDust") },
 			{"SpellTable", new WorldElement(WorldElementType.Block,"SpellTable",0,false,new WorldElement(WorldElementType.Thing,"SpellTableItem","SpellTable")) },
-			{"SpellTableItem", new WorldElement(WorldElementType.Thing,"SpellTableItem","SpellTable")}
+			{"SpellTableItem", new WorldElement(WorldElementType.Thing,"SpellTableItem","SpellTable")},
+			{"WoodenChest", new WorldElement(WorldElementType.Block,"WoodenChest",1,false,new WorldElement(WorldElementType.Thing,"WoodenChestItem","WoodenChest"),true) },
+			{"WoodenChestItem", new WorldElement(WorldElementType.Thing,"WoodenChestItem","WoodenChest",true) }
         };
 		public readonly Dictionary<string,MagicSpell> AllMagicSpells = new Dictionary<string,MagicSpell>()
 		{
@@ -92,7 +94,7 @@ namespace PixelRPG
 			return new Dictionary<string, List<(WorldElement El, double Chance)>>()
 			{
 				{"Chicken", new List<(WorldElement El, double Chance)>(){(AllWorldElements["RawChicken"],1) } },
-				{"Zombie", new List<(WorldElement El, double Chance)>(){(AllWorldElements["RottenFlesh"],1),(AllWorldElements["ZombieHeart"],1d/3) } }
+				{"Zombie", new List<(WorldElement El, double Chance)>(){(AllWorldElements["RottenFlesh"],1),(AllWorldElements["ZombieHeart"],2d/3) } }
 			};
 		}
 
@@ -214,6 +216,17 @@ namespace PixelRPG
                     new WorldElement[1,2]
                     {
                         {AllWorldElements["SpellTableItem"], AllWorldElements["Empty"] }
+                    }
+                },
+                {
+                    new Craft(new WorldElement[2,2]
+                    {
+                        { AllWorldElements["WoodenPlanksItem"], AllWorldElements["StoneChopper"] },
+                        { AllWorldElements["Empty"],AllWorldElements["Empty"] }
+                    }),
+                    new WorldElement[1,2]
+                    {
+                        {AllWorldElements["WoodenChestItem"], AllWorldElements["StoneChopper"] }
                     }
                 }
             };

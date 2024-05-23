@@ -206,7 +206,10 @@ public class GameControls
     private void EscapeIfChar(char controlChar)
     {
         if (controlChar == (char)Keys.Escape)
+        {
+            worldTimer.Stop();
             visual.OpenMenu(MenuType.Escape);
+        }
     }
 
     private void MoveIfChar(char controlChar)
@@ -241,8 +244,14 @@ public class GameControls
         {
             if (frontElement.BreakLevel <= game.Player.Inventory.InventorySlots[0, 0].PowerToBreakOtherEl)
             {
-                game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
-                visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, frontElement.Drop);
+                if (frontElement.IsChest)
+                {
+                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Heap"];
+                    game.Chests[frontPoint].ChestInventory.AddInFirstEmptySlot(frontElement.Drop);
+                }
+                else
+                    game.World[frontPoint.X, frontPoint.Y] = frontElement.Drop;
+                visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
             }
             else if (game.Mobs.ContainsKey(frontPoint))
             {
@@ -261,6 +270,8 @@ public class GameControls
                     game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements[game.Player.Inventory.InventorySlots[0, 0].ParentBlockName];
                 else
                     game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
+                if (game.Player.Inventory.InventorySlots[0,0].IsChest)
+                    game.Chests[frontPoint] = new Chest(new Inventory(), game.Player.Inventory);
                 game.Player.Inventory.InventorySlots[0, 0] = game.AllWorldElements["Empty"];
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
@@ -301,7 +312,7 @@ public class GameControls
             {
                 visual.CloseInventory(InventoryOpen);
                 IsInventoryOpen = false;
-                if (game.Chests.ContainsKey(frontPoint) && game.Chests[frontPoint].IsEmpty())
+                if (game.Chests.ContainsKey(frontPoint) && game.World[frontPoint.X, frontPoint.Y].Equals(game.AllWorldElements["Heap"]) && game.Chests[frontPoint].IsEmpty())
                 {
                     game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Empty"];
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);

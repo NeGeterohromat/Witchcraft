@@ -48,6 +48,7 @@ namespace PixelRPG
                 );
             SizeChanged += (sender, e) => mainMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
             SizeChanged += (sender, e) => escapeMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
+            SizeChanged += (sender, e) => settings.ChangeTextSize(ClientSize.Height * ButtonBasedTextSize * 5 / 18 / 300);
             Controls.Add(mainMenu.MenuTable);
         }
 
