@@ -8,8 +8,18 @@ namespace PixelRPG
 {
     public class Entity
     {
+        public const int RegenerationExpBonus = 20 * 100;
+        public const int DamageExpBonus = 50;
+        public const int SatietyExpBonus = 15 * 100;
+        public const int ManaExpBonus = 50;
         public readonly string Name;
         public readonly EntityActionType Action;
+
+        public int RegenerationExp {  get; private set; }
+        public int DamageExp { get; private set; }
+        public int SatietyExp { get; private set; }
+        public int ManaExp { get; private set; }
+
         public int Health {  get; private set; }
         public Point Position { get; private set; }
         public Sides Direction { get; private set; }
@@ -39,6 +49,10 @@ namespace PixelRPG
             Mana = mana;
             MaxMana = mana;
             Spells = new List<MagicSpell>();
+            RegenerationExp = 100;
+            DamageExp = 100;
+            SatietyExp = 100;
+            ManaExp = 100;
         }
 
         public void AddSpell(MagicSpell spell)
@@ -48,63 +62,22 @@ namespace PixelRPG
                 CurrentSpell = spell;
         }
 
-        public void IncreaseMana(int mana)
-        {
-            if (mana >= 0)
-            {
-                if (mana + Mana <= MaxMana)
-                    Mana += mana;
-                else
-                    Mana = MaxMana;
-            }
-            else
-                throw new Exception("Increased mana amount must be non negative!");
-        }
+        public void IncreaseMana(int mana) => Mana = Add(mana,Mana,MaxMana);
 
         public bool DecreaseMana(int mana)
         {
-            if (mana >= 0)
+            if (Mana >= mana)
             {
-                if (Mana - mana >= 0)
-                {
-                    Mana -= mana;
-                    return true;
-                }
-                else
-                {
-                    Mana = 0;
-                    return false;
-                }
+                Mana = Substract(mana, Mana);
+                return true;
             }
-            else
-                throw new Exception("Decreased mana amount must be non negative!");
+            Mana = 0;
+            return false;
         }
 
-        public void IncreaseSatiety(int sat)
-        {
-            if (sat >= 0)
-            {
-                if (sat + Satiety <= MaxHealth)
-                    Satiety += sat;
-                else
-                    Satiety = MaxSatiety;
-            }
-            else
-                throw new Exception("Increased mana amount must be non negative!");
-        }
+        public void IncreaseSatiety(int sat) => Satiety = Add(sat,Satiety,MaxSatiety);
 
-        public void DecreaseSatiety(int sat)
-        {
-            if (sat >= 0)
-            {
-                if (Satiety - sat >= 0)
-                    Satiety -= sat;
-                else
-                    Satiety = 0;
-            }
-            else
-                throw new Exception("Decreased mana amount must be non negative!");
-        }
+        public void DecreaseSatiety(int sat) => Satiety = Substract(sat,Satiety);
 
         public void ChangeMaxSatiety(int sat)
         {
@@ -113,17 +86,40 @@ namespace PixelRPG
             else throw new Exception("MaxSatiety must be non negative!");
         }
 
-        public void IncreaseHealth(int health)
+        public void IncreaseHealth(int health) => Health = Add(health, Health, MaxHealth);
+
+        public static int Add(int newValue, int currentValue, int maxValue)
         {
-            if (health >= 0)
+            if (newValue>=0)
             {
-                if (health + Health <= MaxHealth)
-                    Health += health;
+                if (newValue + currentValue <= maxValue)
+                    return newValue + currentValue;
                 else
-                    Health = MaxHealth;
+                    return maxValue;
             }
             else
-                throw new Exception("Increased health amount must be non negative!");
+                throw new Exception("Value must be non negative!");
+        }
+
+        public static int Substract(int newValue, int currentValue)
+        {
+            if (newValue >= 0)
+            {
+                if (currentValue - newValue >= 0)
+                    return currentValue - newValue;
+                else
+                    return 0;
+            }
+            else
+                throw new Exception("Value must be non negative!");
+        }
+
+        public static int AddExperience(int newValue, int currentValue)
+        {
+            if (newValue >= 0)
+                return currentValue + (int)(1d * newValue / currentValue);
+            else
+                throw new Exception("Value must be non negative!");
         }
 
         public void ChangeMaxHealth(int health)
@@ -133,15 +129,18 @@ namespace PixelRPG
             else throw new Exception("MaxHealth must be non negative!");
         }
 
+        public void IncreaseDamageExp(int damage) => DamageExp = AddExperience(damage*DamageExpBonus,DamageExp);
+
+        public void IncreaseSatietyExp(int sat) => SatietyExp = AddExperience(sat*SatietyExpBonus, SatietyExp);
+
+        public void IncreaseManaExp(int mana) => ManaExp = AddExperience(mana*ManaExpBonus, ManaExp);
+
         public void SetPosition(Point newPosition) => Position = newPosition;
         public void SetDirection(Sides dir) => Direction = dir;
-        public void DamageEntity(int damage) 
+        public void DamageEntity(int damage)
         {
-            var newHealth = Health - damage;
-            if (newHealth > 0)
-                Health = newHealth;
-            else
-                Health = 0;
+            Health = Substract(damage, Health);
+            RegenerationExp = AddExperience(damage * RegenerationExpBonus, RegenerationExp);
         }
     }
 }

@@ -59,7 +59,7 @@ public class GameControls
             if (game.Player.Satiety > 15 && game.Player.Health < game.Player.MaxHealth)
                 if (random.NextDouble() < GameModel.ChangeHealthBecauseOfFoodChance)
                 {
-                    game.Player.IncreaseHealth(1);
+                    game.Player.IncreaseHealth(1 * game.Player.RegenerationExp / 100);
                     game.Player.DecreaseSatiety(1);
                     visual.ChangePlayerHealthView();
                     visual.ChangePlayerFoodView();
@@ -136,7 +136,8 @@ public class GameControls
             var point = moves[entity.Direction];
             if (game.Player.Position == new Point(entity.Position.X + point.X, entity.Position.Y + point.Y))
             {
-                game.Player.DamageEntity(entity.BaseDamage);
+                game.Player.DamageEntity(entity.BaseDamage * entity.DamageExp / 100);
+                entity.IncreaseDamageExp(entity.BaseDamage);
                 visual.ChangePlayerHealthView();
                 isPlayerDamaged = true;
             }
@@ -256,7 +257,8 @@ public class GameControls
             else if (game.Mobs.ContainsKey(frontPoint))
             {
                 var entity = game.Mobs[frontPoint];
-                entity.DamageEntity(game.Player.Inventory.InventorySlots[0, 0].Damage);
+                entity.DamageEntity(game.Player.Inventory.InventorySlots[0, 0].Damage * game.Player.DamageExp / 100);
+                game.Player.IncreaseDamageExp(game.Player.Inventory.InventorySlots[0, 0].Damage);
                 visual.ViewDamageEffect(entity.Position);
                 if (entity.Health == 0)
                     Death(entity);
@@ -289,16 +291,23 @@ public class GameControls
                 game.Player.Position.Y + moves[game.Player.Direction].Y * (game.Player.CurrentSpell.DamageRange.GetLength(1) / 2 + 1));
             var spellLeftTopPoint = new Point(spellCentrePoint.X - game.Player.CurrentSpell.DamageRange.GetLength(0) / 2,
                 spellCentrePoint.Y - game.Player.CurrentSpell.DamageRange.GetLength(1) / 2);
-            if (game.Player.DecreaseMana(game.Player.CurrentSpell.ManaWasting))
+            if (game.Player.DecreaseMana(game.Player.CurrentSpell.ManaWasting / (game.Player.ManaExp / 100)))
+            {
+                game.Player.IncreaseManaExp(game.Player.CurrentSpell.ManaWasting);
                 for (int i = 0; i < game.Player.CurrentSpell.DamageRange.GetLength(0); i++)
                     for (int j = 0; j < game.Player.CurrentSpell.DamageRange.GetLength(1); j++)
                         if (game.Player.CurrentSpell.DamageRange[i, j] != 0)
                         {
                             var currentPoint = new Point(spellLeftTopPoint.X + i, spellLeftTopPoint.Y + j);
                             if (game.Mobs.ContainsKey(currentPoint))
+                            {
                                 game.Mobs[currentPoint].DamageEntity(game.Player.CurrentSpell.DamageRange[i, j]);
+                                if (game.Mobs[currentPoint].Health == 0)
+                                    Death(game.Mobs[currentPoint]);
+                            }
                             visual.ViewDamageEffect(currentPoint);
                         }
+            }
             visual.ChangePlayerManaView();
             visual.ChangePlayerHealthView();
         }
@@ -372,7 +381,8 @@ public class GameControls
                 {
                     armCraft.SelectedSlots.Dequeue();
                     armCraft.InventorySlots[data.X, data.Y] = game.AllWorldElements["Empty"];
-                    game.Player.IncreaseSatiety((int)element.SatietyBonus);
+                    game.Player.IncreaseSatiety((int)element.SatietyBonus * game.Player.SatietyExp / 100);
+                    game.Player.IncreaseSatietyExp((int)element.SatietyBonus);
                     visual.ChangeInventoryCell(armCraft.SelectedSlots.Count+1, armCraft.InventorySlots[data.X, data.Y]);
                     visual.ChangePlayerFoodView();
                 }
