@@ -18,8 +18,9 @@ namespace PixelRPG
         }
 
 		public event Action<int,int,Image,PictureBoxSizeMode> ChangeOneCellView;
-		public event Action<int,WorldElement> ChangeInventoryCellView;
+		public event Action<int,Image> ChangeInventoryCellView;
         public event Action<WorldElement> ChangeCurrentInventorySlotView;
+		public event Action<MagicSpell> ChangeCurrentMagicSpellView;
         public event Action<Inventory> OpenInventoryView;
         public event Action<Inventory> CloseInventoryView;
         public event Action<MenuType> OpenMenuView;
@@ -28,6 +29,7 @@ namespace PixelRPG
 		public event Action ChangeHealthView;
 		public event Action ChangeFoodView;
 		public event Action ChangeManaView;
+		public event Action OpenSpellTable;
 
 		public void ChangeViewFieldSize(int i)
 		{ 
@@ -35,6 +37,8 @@ namespace PixelRPG
 				ViewFieldSize = i; 
 		}
 
+		public void ChangeCurrentMagicSpell(MagicSpell spell) => ChangeCurrentMagicSpellView(spell);
+		public void OpenSpellTableInterface() => OpenSpellTable();
 		public void ChangePlayerManaView() => ChangeManaView();
 		public void ChangePlayerFoodView() => ChangeFoodView();
 		public void ChangePlayerHealthView() => ChangeHealthView();
@@ -44,9 +48,12 @@ namespace PixelRPG
         public void ChangeCraftImages(Inventory inv) => ChangeCraftImagesView(inv);
 
         public void ChangeInventoryCell(int number, WorldElement cell) =>
-			ChangeInventoryCellView(number, cell);
+			ChangeInventoryCellView(number, Image.FromFile(game.FileName(cell)));
 
-		public void ChangeCurrentInventorySlot(WorldElement el) =>
+        public void ChangeInventoryCell(int number, MagicSpell spell) =>
+            ChangeInventoryCellView(number, Image.FromFile(game.FileName(spell)));
+
+        public void ChangeCurrentInventorySlot(WorldElement el) =>
 			ChangeCurrentInventorySlotView(el);
 
 		public void ViewDamageEffect(Point worldPoint)

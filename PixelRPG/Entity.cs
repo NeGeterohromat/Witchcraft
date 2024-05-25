@@ -30,8 +30,9 @@ namespace PixelRPG
         public int MaxSatiety { get; private set; }
         public int Mana { get; private set; }
         public int MaxMana { get; private set; }
-        public List<MagicSpell> Spells { get; private set; }
+        public MagicSpell[] Spells { get; private set; }
         public MagicSpell CurrentSpell { get; private set; }
+        public int CurrentSpellIndex { get; private set; }
         public Entity(string name, EntityActionType action, int health, Point position, 
             Sides direction,int baseDamage,int satiety, 
             int mana, Inventory inventory)
@@ -48,18 +49,31 @@ namespace PixelRPG
             MaxSatiety = satiety;
             Mana = mana;
             MaxMana = mana;
-            Spells = new List<MagicSpell>();
+            Spells = new MagicSpell[9];
+            for (int i = 0; i < Spells.Length; i++)
+                Spells[i] = new MagicSpell(new int[0, 0], 0, SpellType.Empty);
             RegenerationExp = 100;
             DamageExp = 100;
             SatietyExp = 100;
             ManaExp = 100;
         }
 
-        public void AddSpell(MagicSpell spell)
+        public void ChangeCurrentSpellIndex(int index)
         {
-            Spells.Add(spell);
+            if (index>=0 && index<Spells.Length)
+            {
+                CurrentSpellIndex = index;
+                CurrentSpell = Spells[index];
+            }
+            else
+                throw new ArgumentOutOfRangeException();
+        }
+
+        public void AddFirstSpell(MagicSpell spell)
+        {
+            Spells[0] = spell;
             if (CurrentSpell == null)
-                CurrentSpell = spell;
+                ChangeCurrentSpellIndex(0);
         }
 
         public void IncreaseMana(int mana) => Mana = Add(mana,Mana,MaxMana);

@@ -41,15 +41,15 @@ namespace PixelRPG
 
         public bool SetItemInFirstSlot()
         {
-            if (InventorySlots[0, 0].Name != "Empty") return false;
+            if (InventorySlots[0, 0].Type != WorldElementType.Empty) return false;
             var result = false;
             for (int i = 0; i < InventorySlots.GetLength(0); i++)
             {
                 for (int j = 0; j < InventorySlots.GetLength(1); j++)
-                    if (InventorySlots[i, j].Name != "Empty")
+                    if (InventorySlots[i, j].Type != WorldElementType.Empty)
                     {
                         InventorySlots[0,0] = InventorySlots[i,j];
-                        InventorySlots[i, j] = new WorldElement(WorldElementType.Empty, "Empty",int.MaxValue,true);
+                        InventorySlots[i, j] = new WorldElement(WorldElementType.Empty, "Empty");
                         result = true;
                         break;
                     }

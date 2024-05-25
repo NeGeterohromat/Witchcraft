@@ -20,6 +20,7 @@ namespace PixelRPG
 		public const double IncreacingManaChance = 1d / 3;
         public readonly List<WorldElement> NatureWorldElementsList;
 		public readonly Dictionary<Craft, WorldElement[,]> Crafts2by2;
+		public SpellTableInterface SpellTableSaved {  get; private set; }
 		public readonly List<Entity> NatureMobsPrototypes;
 		public readonly Dictionary<string, Entity> AllMobsPrototypes = new Dictionary<string, Entity>()
 		{
@@ -54,15 +55,7 @@ namespace PixelRPG
 			{"WoodenChest", new WorldElement(WorldElementType.Block,"WoodenChest",1,false,new WorldElement(WorldElementType.Thing,"WoodenChestItem","WoodenChest"),true) },
 			{"WoodenChestItem", new WorldElement(WorldElementType.Thing,"WoodenChestItem","WoodenChest",true) }
         };
-		public readonly Dictionary<string,MagicSpell> AllMagicSpells = new Dictionary<string,MagicSpell>()
-		{
-			{"BaseSquare",new MagicSpell(new int[3,3]
-			{
-				{0,1,0 },
-				{1,2,1 },
-				{0,1,0 }
-			}, 3) }
-		};
+
 		public GameModel(int worldSize, bool isEnemySpawn)
 		{
             this.isEnemySpawn = isEnemySpawn;
@@ -73,12 +66,21 @@ namespace PixelRPG
             Player = AllMobsPrototypes["Player"];
 			Player.IncreaseHealth(Player.MaxHealth);
 			Player.IncreaseSatiety(Player.MaxSatiety);
-			Player.AddSpell(AllMagicSpells["BaseSquare"]);
+			Player.AddFirstSpell(new MagicSpell(new int[3, 3]
+            {
+                {0,1,0 },
+                {1,2,1 },
+                {0,1,0 }
+            }, 3, SpellType.Damage));
+
+			Player.Inventory.AddInFirstEmptySlot(AllWorldElements["SpellTableItem"]);
+
 			World = CreateWorld(worldSize);
 			Player.SetPosition(FindFirstSpawnPoint());
 			NatureMobsPrototypes = GetNatureMobs();
 			Mobs = GetWorldMobs();
 			Chests = new Dictionary<Point, Chest>();
+			SpellTableSaved = new SpellTableInterface(Player.Spells);
 		}
 		public Point FindFirstSpawnPoint()
 		{
@@ -278,7 +280,9 @@ namespace PixelRPG
 
         public string FileName(WorldElement cell)  => @"images\world\"+cell.Name+".png";
 
-        public string FileName(Entity entity) => @"images\entities\"+entity.Name.ToString()+entity.Direction.ToString()+".png";  
-        
+        public string FileName(Entity entity) => @"images\entities\"+entity.Name.ToString()+entity.Direction.ToString()+".png";
+
+        public string FileName(MagicSpell spell) => @"images\icons\" + spell.ImageType + ".png";
+
     }
 }
