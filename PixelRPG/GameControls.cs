@@ -174,6 +174,7 @@ public class GameControls
             MoveIfChar(controlChar);
             WorldInteractionIfChar(controlChar);
             ChangeInventoryIfChar(controlChar);
+            ChangeCurrentSpellIfChar(controlChar);
         };
     }
 
@@ -201,6 +202,37 @@ public class GameControls
                 visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
                 visual.ChangeInventoryCell(2, chest.ChestInventory.InventorySlots[data.Second.X, data.Second.Y]);
                 break;
+        }
+    }
+
+    public void ChangeInventoryVisualSwitchSecondType(MagicSpell[,] first, InventoryTypes second,
+    (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data)
+    {
+        var spellTableInventory = game.SpellTableSaved;
+        switch (second)
+        {
+            case InventoryTypes.SpellInventory:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, spellTableInventory.SavedSpells[data.Second.X, data.Second.Y]);
+                break;
+            case InventoryTypes.SpellSlots:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, spellTableInventory.PlayerSpells[data.Second.X, data.Second.Y]);
+                break;
+            case InventoryTypes.Result:
+                visual.ChangeInventoryCell(1, first[data.First.X, data.First.Y]);
+                visual.ChangeInventoryCell(2, spellTableInventory.Result[data.Second.X, data.Second.Y]);
+                break;
+        }
+    }
+
+    private void ChangeCurrentSpellIfChar(char controlChar)
+    {
+        var i = game.Player.CurrentSpellIndex;
+        if (int.TryParse(controlChar.ToString(), out i))
+        {
+            game.Player.ChangeCurrentSpellIndex(i-1);
+            visual.ChangeCurrentMagicSpell(game.Player.CurrentSpell);
         }
     }
 
@@ -284,6 +316,12 @@ public class GameControls
                 visual.OpenInventory(InventoryOpen);
                 IsInventoryOpen = true;
             }
+            else if (!IsInventoryOpen && frontElement.Equals(game.AllWorldElements["SpellTable"]))
+            {
+                visual.OpenSpellTableInterface();
+                InventoryOpen = game.SpellTableSaved;
+                IsInventoryOpen = true;
+            }
         }
         if (controlChar == (char)Keys.M)
         {
@@ -338,7 +376,14 @@ public class GameControls
         {
             var armCraft = game.Player.Inventory as ArmCraft;
             var chest = game.Chests.ContainsKey(frontPoint)? game.Chests[frontPoint]:null;
-            var data = chest == null? armCraft.ChangeSelectedSlots():chest.ChangeSelectedSlots();
+            var spellTableInventory = game.SpellTableSaved;
+            (bool IsComplete, (int X, int Y, InventoryTypes Type) First, (int X, int Y, InventoryTypes Type) Second) data = default;
+            if (InventoryOpen.Equals(armCraft))
+                data = armCraft.ChangeSelectedSlots();
+            if (InventoryOpen.Equals(chest))
+                data = chest.ChangeSelectedSlots();
+            if (InventoryOpen.Equals(spellTableInventory))
+                data = spellTableInventory.ChangeSelectedSlots();
             if (data.IsComplete)
                 switch (data.First.Type)
                 {
@@ -349,12 +394,26 @@ public class GameControls
                         ChangeInventoryVisualSwitchSecondType(armCraft.CraftZone, data.Second.Type, data);
                         break;
                     case InventoryTypes.Result:
-                        ChangeInventoryVisualSwitchSecondType(armCraft.CraftResult, data.Second.Type, data);
+                        if (InventoryOpen.Equals(armCraft))
+                            ChangeInventoryVisualSwitchSecondType(armCraft.CraftResult, data.Second.Type, data);
+                        else
+                            ChangeInventoryVisualSwitchSecondType(spellTableInventory.Result, data.Second.Type, data);
                         break;
                     case InventoryTypes.Chest:
                         ChangeInventoryVisualSwitchSecondType(chest.ChestInventory.InventorySlots, data.Second.Type, data);
                         break;
+                    case InventoryTypes.SpellInventory:
+                        ChangeInventoryVisualSwitchSecondType(spellTableInventory.SavedSpells, data.Second.Type, data);
+                        break;
+                    case InventoryTypes.SpellSlots:
+                        ChangeInventoryVisualSwitchSecondType(spellTableInventory.PlayerSpells, data.Second.Type, data);
+                        break;
                 }
+            if (InventoryOpen.Equals(spellTableInventory))
+                for (int i = 0;i<spellTableInventory.PlayerSpells.GetLength(1);i++)
+                    game.Player.Spells[i] = spellTableInventory.PlayerSpells[0,i];
+            game.Player.ChangeCurrentSpellIndex(game.Player.CurrentSpellIndex);
+            visual.ChangeCurrentMagicSpell(game.Player.CurrentSpell);
             visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
         }
         if (controlChar == (char)Keys.E)

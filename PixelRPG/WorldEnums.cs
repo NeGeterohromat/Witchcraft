@@ -19,7 +19,9 @@ namespace PixelRPG
         Main,
         Craft,
         Result,
-        Chest
+        Chest,
+        SpellInventory,
+        SpellSlots
     }
     public enum EntityActionType
     {
@@ -40,5 +42,13 @@ namespace PixelRPG
     {
         Main,
         Escape
+    }
+
+    public enum SpellType
+    {
+        Empty,
+        Damage,
+        Heal,
+        Find
     }
 }

@@ -17,6 +17,7 @@ namespace PixelRPG
         private Menu mainMenu;
         private Menu escapeMenu;
         private Settings settings;
+        private TextBox keyBoard;
         private TableLayoutPanel lastInventoryView;
         private TableLayoutPanel gameView;
         private PictureBox ArmSlot;
@@ -94,6 +95,7 @@ namespace PixelRPG
             Controls.Add(keyBar);
             keyBar.Focus();
             keyBar.Select();
+            keyBoard = keyBar;
             controls.worldTimer.Start();
             GC.Collect();
         }
@@ -149,7 +151,7 @@ namespace PixelRPG
 
         public void SetCurrentMagicSpell()
         {
-            PlayerCurrentMagicSpell = SetOnePlayerData(Image.FromFile(@"images/icons/BaseSquare.png"),
+            PlayerCurrentMagicSpell = SetOnePlayerData(Image.FromFile(game.FileName(game.Player.CurrentSpell)),
                 new Size((int)(ClientSize.Width * 0.01 * CurrentSlotPercentSize / 2), (int)(ClientSize.Height * 0.01 * CurrentSlotPercentSize)),
                 new Point((int)(ClientSize.Width * 0.01 * (100 - CurrentSlotPercentSize)), (int)(ClientSize.Height * 0.01 * (100 - CurrentSlotPercentSize * 3))));
             SizeChanged += (sender, e) =>
@@ -246,6 +248,7 @@ namespace PixelRPG
 
         public void SetAllVisualDelegates(TableLayoutPanel table)
         {
+            visual.OpenSpellTable += () => ViewSpellTable();
             visual.ChangeManaView += () =>
             {
                 var imageUnder = Image.FromFile(@"images/icons/ManaEmpty.png");
@@ -291,9 +294,8 @@ namespace PixelRPG
             };
             visual.ChangeInventoryCellView += (number, cell) =>
             {
-                var image = Image.FromFile(game.FileName(cell));
                 var pict = number == 1 ? firstSelectedSlotInInventory : secondSelectedSlotInInventory;
-                pict.Image = image;
+                pict.Image = cell;
                 pict.SizeMode = PictureBoxSizeMode.Zoom;
                 pict.Tag = Color.Transparent;
                 pict.Refresh();
@@ -302,10 +304,8 @@ namespace PixelRPG
                 else
                     secondSelectedSlotInInventory = null;
             };
-            visual.ChangeCurrentInventorySlotView += (el) =>
-            {
-                ArmSlot.Image = Image.FromFile(game.FileName(el));
-            };
+            visual.ChangeCurrentInventorySlotView += (el) => ArmSlot.Image = Image.FromFile(game.FileName(el));
+            visual.ChangeCurrentMagicSpellView += (spell) => PlayerCurrentMagicSpell.Image = Image.FromFile(game.FileName(spell));
         }
 
         public TableLayoutPanel SetGameTable()
@@ -370,6 +370,8 @@ namespace PixelRPG
             };
             p.Click += (sender, e) =>
             {
+                keyBoard.Focus();
+                keyBoard.Select();
                 p.Tag = Color.Green;
                 p.Refresh();
                 if (inventory.AddSlot(row, column, type))
@@ -429,7 +431,6 @@ namespace PixelRPG
                         case InventoryTypes.Chest:
                             image = Image.FromFile(game.FileName(currentChestInventory.ChestInventory.InventorySlots[j,i-1]));
                             p = GetInventoryImage(image,j,i-1,InventoryTypes.Chest, inventory);
-                            craftImages.Add(p);
                             break;
                     }
                     table.Controls.Add(p, i+inventory.InventorySlots.GetLength(0),j);
@@ -485,6 +486,77 @@ namespace PixelRPG
             Controls.Add(PlayerFood);
             Controls.Add(PlayerMana);
             Controls.Add(PlayerCurrentMagicSpell);
+        }
+
+        public TableLayoutPanel SetSpellInventoryTable()
+        {
+            var table = new TableLayoutPanel() { BackColor = Color.Gray, Dock = DockStyle.Fill };
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / (game.SpellTableSaved.SavedSpells.GetLength(1) + 2)));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / (game.SpellTableSaved.SavedSpells.GetLength(1) + 2)));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 100 - 2 * (100f / (game.SpellTableSaved.SavedSpells.GetLength(1) + 2))));
+            var playerSpellsTable = new TableLayoutPanel() { BackColor = Color.Gray, Dock = DockStyle.Fill };
+            playerSpellsTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            for (int i = 0;i<game.SpellTableSaved.PlayerSpells.GetLength(1);i++)
+                playerSpellsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f/ game.SpellTableSaved.PlayerSpells.GetLength(1)));
+            table.Controls.Add(playerSpellsTable,0,0);
+            var savedSpellsTable = new TableLayoutPanel() { BackColor = Color.Gray, Dock = DockStyle.Fill };
+            for (int i = 0; i < game.SpellTableSaved.PlayerSpells.GetLength(1); i++)
+                savedSpellsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / game.SpellTableSaved.PlayerSpells.GetLength(1)));
+            for (int i = 0; i<game.SpellTableSaved.SavedSpells.GetLength(0);i++)
+                savedSpellsTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / game.SpellTableSaved.SavedSpells.GetLength(0)));
+            table.Controls.Add(savedSpellsTable, 0, 2);
+            return table;
+        }
+
+        public void SetControlsInSpellTable(TableLayoutPanel table)
+        {
+            var playerSpellsTable = (TableLayoutPanel)table.GetControlFromPosition(0, 0);
+            for (int i = 0; i<game.SpellTableSaved.PlayerSpells.GetLength(1);i++)
+            {
+                var image = Image.FromFile(game.FileName(game.Player.Spells[i]));
+                var p = GetInventoryImage(image, 0,i, InventoryTypes.SpellSlots, game.SpellTableSaved);
+                playerSpellsTable.Controls.Add(p, i, 0);
+            }
+            var spellWords=new TextBox() { Dock = DockStyle.Fill };
+            spellWords.KeyPress += (sender, e) =>
+            {
+                if (e.KeyChar == (char)Keys.Enter)
+                    ViewCraftedSpell(game.SpellTableSaved.Craft(spellWords.Text));
+            };
+            table.Controls.Add(spellWords, 0, 1);
+            var savedSpellsTable = (TableLayoutPanel)table.GetControlFromPosition(0, 2);
+            for (int i = 0; i < game.SpellTableSaved.SavedSpells.GetLength(0); i++)
+                for (int j = 0; j < game.SpellTableSaved.PlayerSpells.GetLength(1); j++)
+                    if (j < game.SpellTableSaved.SavedSpells.GetLength(1))
+                    {
+                        var image = Image.FromFile(game.FileName(game.SpellTableSaved.SavedSpells[i,j]));
+                        var p = GetInventoryImage(image, i,j, InventoryTypes.SpellInventory, game.SpellTableSaved);
+                        savedSpellsTable.Controls.Add(p, j, i);
+                    }
+                    else if (i == 3 && j== game.SpellTableSaved.SavedSpells.GetLength(1)+1)
+                    {
+                        var image = Image.FromFile(game.FileName(game.SpellTableSaved.Result[0,0]));
+                        var p = GetInventoryImage(image, 0,0, InventoryTypes.Result, game.SpellTableSaved);
+                        savedSpellsTable.Controls.Add(p, j, i);
+                        craftImages.Add(p);
+                    }
+                    else
+                    {
+                        savedSpellsTable.Controls.Add(new PictureBox() { BackColor=Color.Transparent}, j, i);
+                    }
+        }
+
+        public void ViewCraftedSpell(MagicSpell spell) => craftImages.Last().Image = Image.FromFile(game.FileName(spell));
+
+        public void ViewSpellTable()
+        {
+            var table = SetSpellInventoryTable();
+            SetControlsInSpellTable(table);
+            Controls.Remove(gameView);
+            RemovePlayerDataFromView();
+            Controls.Add(table);
+            lastInventoryView = table;
         }
 
         public void ViewInventory(Inventory inventory)

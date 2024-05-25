@@ -46,7 +46,6 @@ namespace PixelRPG
                         SwitchSecondTypes(CraftZone, (first.X, first.Y), second.Type, (second.X, second.Y));
                         break;
                     case InventoryTypes.Result:
-                        SetEmptyArray(CraftZone);
                         SwitchSecondTypes(CraftResult, (first.X, first.Y), second.Type, (second.X, second.Y));
                         break;
                 }
@@ -87,7 +86,6 @@ namespace PixelRPG
                     ChangeSlotsInTwoArrays(first,firstPlace,CraftZone,secondPlace);
                     break;
                 case InventoryTypes.Result:
-                    SetEmptyArray(CraftZone);
                     ChangeSlotsInTwoArrays(first,firstPlace,CraftResult,secondPlace);
                     break;
             }
