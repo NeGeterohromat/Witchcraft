@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static PixelRPG.Save;
 
 namespace PixelRPG
 {
@@ -33,6 +34,12 @@ namespace PixelRPG
         public MagicSpell[] Spells { get; private set; }
         public MagicSpell CurrentSpell { get; private set; }
         public int CurrentSpellIndex { get; private set; }
+
+        public Entity(string name,EntityActionType action) 
+        {
+            Name = name;
+            Action = action;
+        }
         public Entity(string name, EntityActionType action, int health, Point position, 
             Sides direction,int baseDamage,int satiety, 
             int mana, Inventory inventory)
@@ -155,6 +162,30 @@ namespace PixelRPG
         {
             Health = Substract(damage, Health);
             RegenerationExp = AddExperience(damage * RegenerationExpBonus, RegenerationExp);
+        }
+
+        public static Entity GetEntity(EntityData en)
+        {
+            return new Entity(en.Name, en.Action)
+            {
+                Position = en.Position,
+                RegenerationExp = en.RegenerationExp,
+                DamageExp = en.DamageExp,
+                SatietyExp = en.SatietyExp,
+                ManaExp = en.ManaExp,
+                Health = en.Health,
+                Direction = en.Direction,
+                Inventory = Inventory.GetInventory(en.Inventory),
+                BaseDamage = en.BaseDamage,
+                MaxHealth = en.MaxHealth,
+                Satiety = en.Satiety,
+                MaxSatiety = en.MaxSatiety,
+                Mana = en.Mana,
+                MaxMana = en.MaxMana,
+                Spells = en.Spells.Select(s => new MagicSpell(s.DamageRange, s.ManaWasting, s.Type)).ToArray(),
+                CurrentSpell = new MagicSpell(en.CurrentSpell.DamageRange, en.CurrentSpell.ManaWasting, en.CurrentSpell.Type),
+                CurrentSpellIndex = en.CurrentSpellIndex,
+            };
         }
     }
 }

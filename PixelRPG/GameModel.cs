@@ -29,7 +29,7 @@ namespace PixelRPG
 			{"Zombie", new Entity("Zombie",EntityActionType.Enemy,20,new Point(-1,-1),Sides.Down,2,20,20, new Inventory()) }
 		};
 		public readonly Dictionary<string, List<(WorldElement El, double Chance)>> EntityDrops = new Dictionary<string, List<(WorldElement El, double Chance)>>();
-		public readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
+		public static readonly Dictionary<string, WorldElement> AllWorldElements = new Dictionary<string, WorldElement>()
 		{
 			{"OutOfBounds",new WorldElement(WorldElementType.Struckture,"OutOfBounds") },
 			{"Empty",new WorldElement(WorldElementType.Empty,"Empty",int.MaxValue,true) },
@@ -56,7 +56,9 @@ namespace PixelRPG
 			{"WoodenChestItem", new WorldElement(WorldElementType.Thing,"WoodenChestItem","WoodenChest",true) }
         };
 
-		public GameModel(int worldSize, bool isEnemySpawn)
+		public GameModel() { }
+
+        public GameModel(int worldSize, bool isEnemySpawn)
 		{
             this.isEnemySpawn = isEnemySpawn;
 			MobCount = worldSize * worldSize * 25 / 40 / 40;
@@ -73,7 +75,7 @@ namespace PixelRPG
                 {0,1,0 }
             }, 3, SpellType.Damage));
 
-			Player.Inventory.AddInFirstEmptySlot(AllWorldElements["SpellTableItem"]);
+
 
 			World = CreateWorld(worldSize);
 			Player.SetPosition(FindFirstSpawnPoint());
@@ -141,6 +143,7 @@ namespace PixelRPG
 							foreach (var item in EntityDrops[entity.Name])
 								if (random.NextDouble() < item.Chance)
 									entity.Inventory.AddInFirstEmptySlot(item.El);
+						entity.AddFirstSpell(new MagicSpell(new int[0, 0], 0, SpellType.Empty));
 						mobs[entity.Position] = entity;
 						spavnedMobsCount++;
 					}
@@ -284,5 +287,28 @@ namespace PixelRPG
 
         public string FileName(MagicSpell spell) => @"images\icons\" + spell.ImageType + ".png";
 
+		public void ConnectChestsWithPlayer() => Chests = Chests.ToDictionary(ch=>ch.Key,ch=>new Chest(ch.Value.ChestInventory,Player.Inventory));
+		
+		public static GameModel GetModel(Save save)
+		{
+			var game = new GameModel()
+			{
+				Mobs = save.Entities.Select(en => Entity.GetEntity(en)).ToDictionary(en => en.Position, en => en),
+				World = GetWorld(save.WorldData.WorldElements),
+				Chests = save.Chests.ToDictionary(ch => ch.Position, ch => new Chest(Inventory.GetInventory(ch.Inventory), new ArmCraft()))
+			};
+			game.ConnectChestsWithPlayer();
+			game.Player = game.Mobs.Values.Where(en => en.Action==EntityActionType.Player).First();
+			return game;
+		}
+
+		public static WorldElement[,] GetWorld(string[,] world)
+		{
+			var result = new WorldElement[world.GetLength(0),world.GetLength(1)];
+			for (int i = 0;  i < world.GetLength(0); i++)
+				for (int j = 0; j < world.GetLength(1); j++)
+					result[i,j] = AllWorldElements[world[i,j]];
+			return result;
+		}
     }
 }

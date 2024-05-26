@@ -105,7 +105,7 @@ public class GameControls
     {
         game.Mobs.Remove(entity.Position);
         game.Chests[entity.Position] = new Chest(entity.Inventory, game.Player.Inventory);
-        game.World[entity.Position.X, entity.Position.Y] = game.AllWorldElements["Heap"];
+        game.World[entity.Position.X, entity.Position.Y] = GameModel.AllWorldElements["Heap"];
         visual.ChangeOneCellByWorldCoords(entity.Position.X, entity.Position.Y, game.World[entity.Position.X, entity.Position.Y]);
     }
 
@@ -279,7 +279,7 @@ public class GameControls
             {
                 if (frontElement.IsChest)
                 {
-                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Heap"];
+                    game.World[frontPoint.X, frontPoint.Y] = GameModel.AllWorldElements["Heap"];
                     game.Chests[frontPoint].ChestInventory.AddInFirstEmptySlot(frontElement.Drop);
                 }
                 else
@@ -301,12 +301,12 @@ public class GameControls
             if (!IsInventoryOpen && frontElement.Type == WorldElementType.Empty && !game.Mobs.ContainsKey(frontPoint) && game.Player.Inventory.InventorySlots[0, 0].Type != WorldElementType.Empty)
             {
                 if (game.Player.Inventory.InventorySlots[0, 0].ParentBlockName != null)
-                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements[game.Player.Inventory.InventorySlots[0, 0].ParentBlockName];
+                    game.World[frontPoint.X, frontPoint.Y] = GameModel.AllWorldElements[game.Player.Inventory.InventorySlots[0, 0].ParentBlockName];
                 else
                     game.World[frontPoint.X, frontPoint.Y] = game.Player.Inventory.InventorySlots[0, 0];
                 if (game.Player.Inventory.InventorySlots[0,0].IsChest)
                     game.Chests[frontPoint] = new Chest(new Inventory(), game.Player.Inventory);
-                game.Player.Inventory.InventorySlots[0, 0] = game.AllWorldElements["Empty"];
+                game.Player.Inventory.InventorySlots[0, 0] = GameModel.AllWorldElements["Empty"];
                 visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                 visual.ChangeCurrentInventorySlot(game.Player.Inventory.InventorySlots[0, 0]);
             }
@@ -316,7 +316,7 @@ public class GameControls
                 visual.OpenInventory(InventoryOpen);
                 IsInventoryOpen = true;
             }
-            else if (!IsInventoryOpen && frontElement.Equals(game.AllWorldElements["SpellTable"]))
+            else if (!IsInventoryOpen && frontElement.Equals(GameModel.AllWorldElements["SpellTable"]))
             {
                 visual.OpenSpellTableInterface();
                 InventoryOpen = game.SpellTableSaved;
@@ -359,9 +359,9 @@ public class GameControls
             {
                 visual.CloseInventory(InventoryOpen);
                 IsInventoryOpen = false;
-                if (game.Chests.ContainsKey(frontPoint) && game.World[frontPoint.X, frontPoint.Y].Equals(game.AllWorldElements["Heap"]) && game.Chests[frontPoint].IsEmpty())
+                if (game.Chests.ContainsKey(frontPoint) && game.World[frontPoint.X, frontPoint.Y].Equals(GameModel.AllWorldElements["Heap"]) && game.Chests[frontPoint].IsEmpty())
                 {
-                    game.World[frontPoint.X, frontPoint.Y] = game.AllWorldElements["Empty"];
+                    game.World[frontPoint.X, frontPoint.Y] = GameModel.AllWorldElements["Empty"];
                     visual.ChangeOneCellByWorldCoords(frontPoint.X, frontPoint.Y, game.World[frontPoint.X, frontPoint.Y]);
                     game.Chests.Remove(frontPoint);
                 }
@@ -439,7 +439,7 @@ public class GameControls
                 if (element.Type == WorldElementType.Food)
                 {
                     armCraft.SelectedSlots.Dequeue();
-                    armCraft.InventorySlots[data.X, data.Y] = game.AllWorldElements["Empty"];
+                    armCraft.InventorySlots[data.X, data.Y] = GameModel.AllWorldElements["Empty"];
                     game.Player.IncreaseSatiety((int)element.SatietyBonus * game.Player.SatietyExp / 100);
                     game.Player.IncreaseSatietyExp((int)element.SatietyBonus);
                     visual.ChangeInventoryCell(armCraft.SelectedSlots.Count+1, armCraft.InventorySlots[data.X, data.Y]);

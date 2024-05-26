@@ -16,6 +16,7 @@ namespace PixelRPG
         private GameControls controls;
         private Menu mainMenu;
         private Menu escapeMenu;
+        private Menu saveMenu;
         private Settings settings;
         private TextBox keyBoard;
         private TableLayoutPanel lastInventoryView;
@@ -40,12 +41,19 @@ namespace PixelRPG
             settings = new Settings();
             mainMenu = new Menu(Color.Purple,
                 ("Новая игра", (sender, e) => StartGame()),
-                ("Настройки", (sender, e) =>  { Controls.Remove(mainMenu.MenuTable); Controls.Add(settings.SettingsTable); }),
+                ("Сохранённые миры", (sender, e) => { Controls.Remove(mainMenu.MenuTable); Controls.Add(saveMenu.MenuTable); }),
+                ("Настройки", (sender, e) =>  { Controls.Add(settings.SettingsTable); settings.SettingsTable.BringToFront(); }),
                 ("Выход", (sender, e) => Close())
                 );
             escapeMenu = new Menu(Color.Orange,
                 ("В главное меню",(sender,e)=> OpenMenu(MenuType.Main)),
-                ("Возродиться",(sender,e)=>RestartGame())
+                ("Настройки", (sender, e) => { Controls.Add(settings.SettingsTable); settings.SettingsTable.BringToFront(); }),
+                ("Возродиться",(sender,e)=>RestartGame()),
+                ("Сохранить мир", (sender, e) => SaveManager.SaveGame(game))
+                );
+            saveMenu = new Menu(Color.White,
+                ("Первое сохранение", (sender, e) => 
+                OpenGame(SaveManager.LoadGame(SaveManager.GetFilePath(0))))
                 );
             SizeChanged += (sender, e) => mainMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
             SizeChanged += (sender, e) => escapeMenu.ChangeButtonTextSize(ClientSize.Height * ButtonBasedTextSize / 300);
@@ -65,17 +73,35 @@ namespace PixelRPG
                 if (i >= 10 && i <= 10000)
                     gameSize = i;
             };
-            Settings.BackToMenu += () =>
-            {
-                Controls.Remove(settings.SettingsTable);
-                Controls.Add(mainMenu.MenuTable);
-            };
+            Settings.BackToMenu += () => Controls.Remove(settings.SettingsTable);
             Settings.EnemyDifficultChanged += b => isEnemySpawn = b;
             Settings.VisualSizeChanged += i =>
             {
                 if (i >= 5 && i <= 60)
                     visualViewFieldSize = i;
             };
+        }
+
+        public void OpenGame(GameModel game)
+        {
+            Controls.Clear();
+            this.game = game;
+            visual = new GameVisual(game, visualViewFieldSize);
+            controls = new GameControls(game, visual);
+            var keyBar = new TextBox() { Size = new Size(0, 0) };
+            controls.SetKeyCommands(keyBar);
+            var tableView = visual.GetWorldVisual(game.Player.Position);
+            var table = SetImages(SetGameTable(), tableView);
+            gameView = table;
+            SetAllVisualDelegates(table);
+            AddAllPlayerData();
+            Controls.Add(table);
+            Controls.Add(keyBar);
+            keyBar.Focus();
+            keyBar.Select();
+            keyBoard = keyBar;
+            controls.worldTimer.Start();
+            GC.Collect();
         }
 
         public void StartGame()
@@ -106,6 +132,8 @@ namespace PixelRPG
             game.Player.IncreaseHealth(20);
             game.Player.IncreaseSatiety(20);
             game.Player.IncreaseMana(20);
+            visual = new GameVisual(game, visualViewFieldSize);
+            controls = new GameControls(game, visual);
             var keyBar = new TextBox() { Size = new Size(0, 0) };
             controls.SetKeyCommands(keyBar);
             var tableView = visual.GetWorldVisual(game.Player.Position);

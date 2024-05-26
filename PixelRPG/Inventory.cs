@@ -16,6 +16,15 @@ namespace PixelRPG
             InventorySlots = new WorldElement[8, 8];
             SetEmptyArray(InventorySlots);
         }
+        public static Inventory GetInventory(string[,] inv)
+        {
+            var result = new WorldElement[inv.GetLength(0), inv.GetLength(1)];
+            for (int i = 0; i < inv.GetLength(0); i++)
+                for (int j = 0; j < inv.GetLength(1); j++)
+                    result[i, j] = GameModel.AllWorldElements[inv[i, j]];
+            return new Inventory() { InventorySlots = result };
+        }
+
         public static void SetEmptyArray(WorldElement[,] array)
         {
             for (int i = 0; i < array.GetLength(0); i++)

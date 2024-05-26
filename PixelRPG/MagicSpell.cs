@@ -120,7 +120,7 @@ namespace PixelRPG
         public static bool IsTangens(int first, int second)
         {
             var min = Math.Min(first, second);
-            if (min != 0 && Math.Max(first, second) % min == 0)
+            if (min != 0 && Math.Max(first, second) % min == 0 && first !=1 && second !=1)
                 return false;
             for (int i = 2; i<(int)(Math.Sqrt(min)+1);i++)
                 if (first % i == 0 && second % i == 0)
